@@ -21,9 +21,9 @@ export default async function LoginPage({
         <form action={signIn} className="mt-8 flex flex-col gap-3 text-left">
           <input type="hidden" name="next" value={next ?? "/"} />
           <div>
-            <label className="font-bold text-xs text-ink-muted mb-1.5 block">Email</label>
+            <label className="font-bold text-xs text-ink-muted mb-1.5 block">Tên đăng nhập</label>
             <input
-              type="email"
+              type="text"
               name="email"
               required
               autoFocus

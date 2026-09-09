@@ -63,25 +63,31 @@ export function VocabQuizRunner({
     if (answered || submitting) return;
     setSubmitting(true);
     setPicked(opt);
+
+    // Hiện đáp án ngay bằng dữ liệu đã có sẵn ở client (word.vi) — không đợi
+    // API mới hiện được, để lỗi mạng/timeout không làm UI đứng im.
+    const correct = opt === current.vi;
+    const answer = current.vi;
+    setCorrectAnswer(answer);
+    setAnswered(true);
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+    } else {
+      setWrongList((list) => [
+        ...list,
+        { en: current.en, correctAnswer: answer, example: current.example },
+      ]);
+    }
+
     try {
-      const res = await fetch("/api/vocab/progress", {
+      await fetch("/api/vocab/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ word_id: current.id, mode: "quiz", picked: opt }),
       });
-      const body = await res.json();
-      const correct: boolean = body.correct ?? opt === current.vi;
-      const answer: string = body.correctAnswer ?? current.vi;
-      setCorrectAnswer(answer);
-      setAnswered(true);
-      if (correct) {
-        setCorrectCount((c) => c + 1);
-      } else {
-        setWrongList((list) => [
-          ...list,
-          { en: current.en, correctAnswer: answer, example: current.example },
-        ]);
-      }
+    } catch {
+      // Bỏ qua lỗi mạng — UI đã hiện kết quả, chỉ tiến trình ôn tập không lưu
+      // được lần này, không ảnh hưởng trải nghiệm làm quiz.
     } finally {
       setSubmitting(false);
     }

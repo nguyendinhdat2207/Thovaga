@@ -147,21 +147,14 @@ export class VocabProgressError extends Error {
   }
 }
 
-// Cập nhật tiến trình ôn tập kiểu Leitner: đúng thì tăng box (tối đa 5), sai
-// thì quay về box 1. next_review tính theo bảng interval BOX_INTERVAL_DAYS.
-export async function updateVocabProgress(
+// Ghi tiến trình dạng Leitner khi đã biết chắc word_id tồn tại (đỡ 1 round-trip
+// kiểm tra lại) — đúng thì tăng box (tối đa 5), sai thì quay về box 1.
+// next_review tính theo bảng interval BOX_INTERVAL_DAYS.
+async function applyVocabProgress(
   supabase: SupabaseClient<Database>,
   wordId: string,
   correct: boolean
 ): Promise<VocabProgress> {
-  const { data: word, error: wordErr } = await supabase
-    .from("vocab_words")
-    .select("id")
-    .eq("id", wordId)
-    .maybeSingle();
-  if (wordErr) throw wordErr;
-  if (!word) throw new VocabProgressError("word_id không tồn tại.", 404);
-
   const { data: existing, error: existingErr } = await supabase
     .from("vocab_progress")
     .select("*")
@@ -193,6 +186,22 @@ export async function updateVocabProgress(
   return saved;
 }
 
+export async function updateVocabProgress(
+  supabase: SupabaseClient<Database>,
+  wordId: string,
+  correct: boolean
+): Promise<VocabProgress> {
+  const { data: word, error: wordErr } = await supabase
+    .from("vocab_words")
+    .select("id")
+    .eq("id", wordId)
+    .maybeSingle();
+  if (wordErr) throw wordErr;
+  if (!word) throw new VocabProgressError("word_id không tồn tại.", 404);
+
+  return applyVocabProgress(supabase, wordId, correct);
+}
+
 export async function gradeVocabQuizAnswer(
   supabase: SupabaseClient<Database>,
   wordId: string,
@@ -207,6 +216,6 @@ export async function gradeVocabQuizAnswer(
   if (!word) throw new VocabProgressError("word_id không tồn tại.", 404);
 
   const correct = picked === word.vi;
-  const progress = await updateVocabProgress(supabase, wordId, correct);
+  const progress = await applyVocabProgress(supabase, wordId, correct);
   return { correct, correctAnswer: word.vi, progress };
 }

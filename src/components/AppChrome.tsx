@@ -8,6 +8,7 @@ import { signOut } from "@/app/login/actions";
 
 const NAV_ITEMS = [
   { href: "/", label: "Học", match: (p: string) => p === "/" || p.startsWith("/subjects") || p.startsWith("/quiz") },
+  { href: "/vocab", label: "Từ vựng", match: (p: string) => p.startsWith("/vocab") },
   { href: "/history", label: "Lịch sử", match: (p: string) => p.startsWith("/history") },
   { href: "/upload", label: "Tài liệu", match: (p: string) => p.startsWith("/upload") },
 ];
@@ -20,7 +21,10 @@ export function AppChrome({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const hideChrome = pathname.startsWith("/quiz/") && !pathname.includes("/result");
+  const hideChrome =
+    (pathname.startsWith("/quiz/") && !pathname.includes("/result")) ||
+    pathname.startsWith("/vocab/flashcard") ||
+    pathname.startsWith("/vocab/quiz");
 
   return (
     <div className="min-h-screen flex flex-col bg-bg">
@@ -73,7 +77,7 @@ export function AppChrome({
       <main className="flex-1">{children}</main>
 
       {!hideChrome && (
-        <nav className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-3 pt-2 pb-3 px-1.5">
+        <nav className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-4 pt-2 pb-3 px-1.5">
           {NAV_ITEMS.map((item) => {
             const active = item.match(pathname);
             return (

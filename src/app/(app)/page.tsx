@@ -78,6 +78,15 @@ export default async function HomePage() {
             <WeekChart data={stats.weeklyMinutesByDay} />
           </div>
           <div className="border-t border-border pt-[18px]">
+            <div className="font-display font-extrabold text-[17px] text-ink">Từ vựng</div>
+            <p className="font-bold text-[13px] leading-relaxed text-ink-muted mt-1 mb-3">
+              Ôn từ vựng bằng flashcard, quiz và tra cứu kho từ.
+            </p>
+            <LinkButton variant="ghost" size="sm" href="/vocab">
+              Đi tới trang từ vựng
+            </LinkButton>
+          </div>
+          <div className="border-t border-border pt-[18px]">
             <div className="font-display font-extrabold text-[17px] text-ink">Tải đề lên</div>
             <p className="font-bold text-[13px] leading-relaxed text-ink-muted mt-1 mb-3">
               Thêm PDF đề thi hoặc dán JSON câu hỏi để tạo bộ đề mới.

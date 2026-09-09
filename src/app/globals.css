@@ -52,3 +52,23 @@ body {
 input[type="file"] {
   display: none;
 }
+
+.flip-card-wrap {
+  perspective: 1400px;
+}
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+.flip-card.flipped {
+  transform: rotateY(180deg);
+}
+.flip-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+.flip-card-face.back {
+  transform: rotateY(180deg);
+}

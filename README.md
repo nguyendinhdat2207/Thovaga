@@ -14,9 +14,21 @@ Thiết kế gốc (tham chiếu, không phải code) nằm ở
 - Import bộ đề bằng cách dán JSON câu hỏi (ưu tiên cao nhất theo yêu cầu ban đầu).
 - Upload file gốc (PDF/DOCX/ảnh) lên Supabase Storage — **chưa** tự trích câu hỏi bằng AI,
   xem TODO trong `src/app/api/decks/upload/route.ts`.
-- Flashcard và đọc hiểu TOEIC Part 7 (2 dạng còn lại trong thiết kế gốc) **chưa** được hiện
-  thực hoá — schema hiện tại (`questions.options` + `correct_option`) chỉ mô tả trắc nghiệm.
-  Xem TODO trong `supabase/migrations/0001_init.sql`.
+- Đọc hiểu TOEIC Part 7 (1 dạng còn lại trong thiết kế gốc) **chưa** được hiện thực hoá —
+  schema hiện tại (`questions.options` + `correct_option`) chỉ mô tả trắc nghiệm.
+
+### Từ vựng (flashcard + quiz + kho từ)
+
+Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` — dùng bảng riêng
+`vocab_decks`/`vocab_words`/`vocab_progress` (xem `supabase/migrations/0003_vocab.sql`).
+
+- **Flashcard** (`/vocab/flashcard?scope=due|deckId=...`): lật thẻ, tự đánh giá nhớ/chưa nhớ,
+  tiến trình lưu kiểu Leitner (box 0-5, `next_review` tăng dần 0→1→2→4→7→15 ngày).
+- **Quiz** (`/vocab/quiz?scope=all|deckId=...`): trắc nghiệm 4 đáp án tự sinh từ nghĩa các từ
+  khác — server luôn tính lại đúng/sai (`src/lib/queries/vocab.ts#gradeVocabQuizAnswer`), không
+  tin client.
+- **Kho từ** (`/vocab/bank`): tìm kiếm + lọc theo bộ từ.
+- **Thêm từ mới** (`/vocab/import`): dán danh sách `từ | nghĩa | ví dụ`, mỗi dòng 1 từ.
 
 ## Chạy local
 

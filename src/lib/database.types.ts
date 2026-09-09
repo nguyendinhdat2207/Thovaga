@@ -146,6 +146,74 @@ export interface Database {
           },
         ];
       };
+      vocab_decks: {
+        Row: {
+          id: string;
+          title: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vocab_decks"]["Insert"]>;
+        Relationships: [];
+      };
+      vocab_words: {
+        Row: {
+          id: string;
+          deck_id: string;
+          en: string;
+          vi: string;
+          example: string | null;
+        };
+        Insert: {
+          id?: string;
+          deck_id: string;
+          en: string;
+          vi: string;
+          example?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["vocab_words"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "vocab_words_deck_id_fkey";
+            columns: ["deck_id"];
+            isOneToOne: false;
+            referencedRelation: "vocab_decks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      vocab_progress: {
+        Row: {
+          word_id: string;
+          box: number;
+          correct: number;
+          wrong: number;
+          next_review: string;
+          updated_at: string;
+        };
+        Insert: {
+          word_id: string;
+          box?: number;
+          correct?: number;
+          wrong?: number;
+          next_review?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vocab_progress"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "vocab_progress_word_id_fkey";
+            columns: ["word_id"];
+            isOneToOne: true;
+            referencedRelation: "vocab_words";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -157,3 +225,6 @@ export type Deck = Database["public"]["Tables"]["decks"]["Row"];
 export type Question = Database["public"]["Tables"]["questions"]["Row"];
 export type Attempt = Database["public"]["Tables"]["attempts"]["Row"];
 export type AttemptAnswer = Database["public"]["Tables"]["attempt_answers"]["Row"];
+export type VocabDeck = Database["public"]["Tables"]["vocab_decks"]["Row"];
+export type VocabWord = Database["public"]["Tables"]["vocab_words"]["Row"];
+export type VocabProgress = Database["public"]["Tables"]["vocab_progress"]["Row"];

@@ -1,0 +1,133 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { VocabWordWithProgress } from "@/lib/queries/vocab";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Button } from "@/components/ui/Button";
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
+  const router = useRouter();
+  // Giữ nguyên thứ tự lúc render server để tránh lệch hydration, xáo trộn
+  // sau khi mount ở client (chỉ chạy trên trình duyệt).
+  const [queue, setQueue] = useState(words);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- xáo trộn client-only có chủ đích, tránh lệch hydration
+    setQueue(shuffle(words));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [index, setIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [knownCount, setKnownCount] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  const done = index >= queue.length;
+  const current = queue[index];
+
+  async function answer(know: boolean) {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await fetch("/api/vocab/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word_id: current.id, mode: "flashcard", know }),
+      });
+    } finally {
+      setSaving(false);
+    }
+    if (know) setKnownCount((c) => c + 1);
+    setFlipped(false);
+    setIndex((i) => i + 1);
+  }
+
+  if (done) {
+    return (
+      <div className="max-w-[520px] mx-auto px-5 py-10 text-center">
+        <h2 className="font-display font-extrabold text-[22px] text-ink mb-2">
+          Hoàn thành phiên ôn tập
+        </h2>
+        <div className="flex gap-4 justify-center my-6">
+          <div className="flex-1">
+            <div className="font-display font-extrabold text-3xl text-yellow-shadow">{knownCount}</div>
+            <div className="font-bold text-xs text-ink-muted mt-1">Đã nhớ</div>
+          </div>
+          <div className="flex-1">
+            <div className="font-display font-extrabold text-3xl text-orange">
+              {queue.length - knownCount}
+            </div>
+            <div className="font-bold text-xs text-ink-muted mt-1">Cần ôn lại</div>
+          </div>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button variant="ghost" onClick={() => router.push("/vocab")}>
+            Về trang từ vựng
+          </Button>
+          <Button
+            onClick={() => {
+              setIndex(0);
+              setKnownCount(0);
+              setFlipped(false);
+            }}
+          >
+            Ôn lại
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[520px] mx-auto px-5 py-6">
+      <div className="mb-4">
+        <ProgressBar percent={(index / queue.length) * 100} />
+        <div className="font-bold text-xs text-ink-muted mt-1.5 text-center">
+          {index + 1} / {queue.length}
+        </div>
+      </div>
+
+      <div className="flip-card-wrap" style={{ minHeight: 220 }}>
+        <div
+          className={`flip-card ${flipped ? "flipped" : ""}`}
+          style={{ minHeight: 220 }}
+          onClick={() => setFlipped((f) => !f)}
+        >
+          <div className="flip-card-face front border-2 border-border rounded-2xl bg-white flex flex-col items-center justify-center text-center px-6 cursor-pointer" style={{ minHeight: 220 }}>
+            <div className="font-display font-extrabold text-[28px] text-ink">{current.en}</div>
+            <div className="font-bold text-xs text-ink-muted mt-2.5 uppercase tracking-wide">
+              Chạm để xem nghĩa
+            </div>
+          </div>
+          <div className="flip-card-face back border-2 border-yellow rounded-2xl bg-yellow-pale flex flex-col items-center justify-center text-center px-6 cursor-pointer" style={{ minHeight: 220 }}>
+            <div className="font-display font-extrabold text-2xl text-ink">{current.vi}</div>
+            {current.example && (
+              <p className="font-bold text-sm text-ink-muted mt-3 italic">&quot;{current.example}&quot;</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {flipped ? (
+        <div className="flex gap-3 mt-5">
+          <Button variant="danger" className="flex-1" disabled={saving} onClick={() => answer(false)}>
+            Chưa nhớ
+          </Button>
+          <Button className="flex-1" disabled={saving} onClick={() => answer(true)}>
+            Đã nhớ
+          </Button>
+        </div>
+      ) : (
+        <p className="font-bold text-xs text-ink-muted text-center mt-4">Nhấn vào thẻ để lật</p>
+      )}
+    </div>
+  );
+}

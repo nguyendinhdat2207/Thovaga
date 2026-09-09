@@ -5,8 +5,8 @@ import { recordAttempt, RecordAttemptError } from "@/lib/queries/attempts";
 export async function POST(req: Request) {
   const supabase = await createClient();
 
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
 

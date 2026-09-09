@@ -5,8 +5,8 @@ import { getSubjectsWithProgress } from "@/lib/queries/subjects";
 export async function GET() {
   const supabase = await createClient();
 
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
 

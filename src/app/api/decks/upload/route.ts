@@ -19,8 +19,8 @@ function sanitizeFileName(name: string) {
 export async function POST(req: Request) {
   const supabase = await createClient();
 
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
     return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
   }
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "File vượt quá 25 MB." }, { status: 400 });
   }
 
-  const path = `${userData.user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+  const path = `${sessionData.session.user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
     .upload(path, file, { contentType: file.type || undefined });

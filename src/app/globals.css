@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg: #ffffff;
+  --color-bg-accent: #fffcf3;
+  --color-yellow: #ffb100;
+  --color-yellow-shadow: #d98d00;
+  --color-yellow-pale: #fffbf0;
+  --color-yellow-pill: #fff3d4;
+  --color-orange: #ff5a36;
+  --color-orange-pale: #fff6f3;
+  --color-orange-badge: #ffd9cf;
+  --color-ink: #4a3410;
+  --color-ink-muted: #9c8455;
+  --color-ink-faint: #c4b39a;
+  --color-border: #ede7dd;
+  --color-border-dashed: #e6dece;
+  --color-track: #f3efe8;
+  --color-badge-bg: #f8f5f0;
+  --color-mascot-border: #6b4a2f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--color-bg);
+  --color-bg-accent: var(--color-bg-accent);
+  --color-yellow: var(--color-yellow);
+  --color-yellow-shadow: var(--color-yellow-shadow);
+  --color-yellow-pale: var(--color-yellow-pale);
+  --color-yellow-pill: var(--color-yellow-pill);
+  --color-orange: var(--color-orange);
+  --color-orange-pale: var(--color-orange-pale);
+  --color-orange-badge: var(--color-orange-badge);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-border: var(--color-border);
+  --color-border-dashed: var(--color-border-dashed);
+  --color-track: var(--color-track);
+  --color-badge-bg: var(--color-badge-bg);
+  --color-mascot-border: var(--color-mascot-border);
+  --font-display: var(--font-baloo), sans-serif;
+  --font-body: var(--font-nunito), sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+input[type="file"] {
+  display: none;
 }

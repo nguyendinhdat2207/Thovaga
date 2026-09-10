@@ -65,8 +65,9 @@ export function QuizRunner({
     }
   }
 
-  function check() {
-    if (picked === null) return;
+  function selectAndCheck(i: number) {
+    if (checked) return;
+    setPicked(i);
     setChecked(true);
   }
 
@@ -138,7 +139,7 @@ export function QuizRunner({
               <button
                 key={i}
                 disabled={checked}
-                onClick={() => setPicked(i)}
+                onClick={() => selectAndCheck(i)}
                 className={`w-full flex items-center gap-3.5 text-left rounded-2xl px-[18px] py-4 border transition-colors ${
                   showRight
                     ? "bg-yellow-pale border-yellow border-2"
@@ -201,19 +202,11 @@ export function QuizRunner({
           <button onClick={skip} disabled={submitting} className="font-display font-bold text-[15px] text-ink-muted px-1 py-3">
             Bỏ qua
           </button>
-          <Button
-            onClick={checked ? next : check}
-            disabled={submitting || (!checked && picked === null)}
-            size="lg"
-          >
-            {submitting
-              ? "Đang lưu..."
-              : checked
-                ? isLast
-                  ? "Xem kết quả"
-                  : "Câu tiếp theo"
-                : "Kiểm tra"}
-          </Button>
+          {checked && (
+            <Button onClick={next} disabled={submitting} size="lg">
+              {submitting ? "Đang lưu..." : isLast ? "Xem kết quả" : "Câu tiếp theo"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

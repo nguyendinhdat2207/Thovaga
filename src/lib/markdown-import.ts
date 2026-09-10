@@ -49,7 +49,9 @@ export function parseNumberedBlocks(text: string): RawBlock[] {
     }
     if (!current) continue;
 
-    const optionMatch = line.match(/^([A-Da-d])[.)]\s+(.*)$/);
+    // Chấp nhận bất kỳ chữ cái nào làm nhãn lựa chọn (A, B, ... không chỉ
+    // giới hạn A-D) — một số đề có tới 6-12 lựa chọn (E, F, G...).
+    const optionMatch = line.match(/^([A-Za-z])[.)]\s+(.*)$/);
     if (optionMatch) {
       current.options.push({ letter: optionMatch[1].toUpperCase(), text: optionMatch[2].trim() });
       continue;
@@ -59,7 +61,9 @@ export function parseNumberedBlocks(text: string): RawBlock[] {
     if (labelMatch) {
       const [, label, value] = labelMatch;
       if (isAnswerLabel(label)) {
-        const letterMatch = value.trim().match(/^[A-Da-d]/);
+        // Một số câu liệt kê nhiều đáp án đúng (vd "D, E") — DB chỉ hỗ trợ 1
+        // đáp án đúng/câu nên chỉ lấy chữ cái đầu tiên.
+        const letterMatch = value.trim().match(/^[A-Za-z]/);
         current.answerLetter = letterMatch ? letterMatch[0].toUpperCase() : null;
         continue;
       }

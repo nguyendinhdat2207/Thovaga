@@ -16,6 +16,11 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function buildOptions(word: VocabWordWithProgress, pool: VocabWordWithProgress[]): string[] {
+  // Ưu tiên đáp án nhiễu đã soạn sẵn (khó phân biệt hơn) — chỉ random từ các
+  // từ khác trong pool khi từ này chưa có distractors soạn sẵn.
+  if (word.distractors && word.distractors.length > 0) {
+    return shuffle([word.vi, ...word.distractors]);
+  }
   const others = pool.filter((w) => w.id !== word.id && w.vi !== word.vi);
   const distractors = shuffle(others)
     .slice(0, 3)

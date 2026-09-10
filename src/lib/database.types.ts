@@ -167,6 +167,7 @@ export interface Database {
           en: string;
           vi: string;
           example: string | null;
+          distractors: string[] | null;
         };
         Insert: {
           id?: string;
@@ -174,6 +175,7 @@ export interface Database {
           en: string;
           vi: string;
           example?: string | null;
+          distractors?: string[] | null;
         };
         Update: Partial<Database["public"]["Tables"]["vocab_words"]["Insert"]>;
         Relationships: [

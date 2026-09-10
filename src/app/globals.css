@@ -10,6 +10,10 @@
   --color-orange: #ff5a36;
   --color-orange-pale: #fff6f3;
   --color-orange-badge: #ffd9cf;
+  --color-green: #2f8a52;
+  --color-green-shadow: #23703f;
+  --color-green-pale: #f0faf3;
+  --color-green-badge: #cdeed9;
   --color-ink: #4a3410;
   --color-ink-muted: #9c8455;
   --color-ink-faint: #c4b39a;
@@ -30,6 +34,10 @@
   --color-orange: var(--color-orange);
   --color-orange-pale: var(--color-orange-pale);
   --color-orange-badge: var(--color-orange-badge);
+  --color-green: var(--color-green);
+  --color-green-shadow: var(--color-green-shadow);
+  --color-green-pale: var(--color-green-pale);
+  --color-green-badge: var(--color-green-badge);
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
   --color-ink-faint: var(--color-ink-faint);

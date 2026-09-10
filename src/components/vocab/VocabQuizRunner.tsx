@@ -202,7 +202,7 @@ export function VocabQuizRunner({
               onClick={() => pick(opt)}
               className={`w-full text-left rounded-2xl px-[18px] py-3.5 border-2 font-bold text-[15px] text-ink transition-colors ${
                 showRight
-                  ? "bg-yellow-pale border-yellow"
+                  ? "bg-green-pale border-green"
                   : showWrong
                     ? "bg-orange-pale border-orange"
                     : "border-border"
@@ -217,10 +217,14 @@ export function VocabQuizRunner({
       {answered && (
         <div
           className={`mt-[18px] border rounded-2xl px-[18px] py-4 ${
-            picked === correctAnswer ? "bg-yellow-pale border-[#FFE1A1]" : "bg-orange-pale border-[#FFD0C4]"
+            picked === correctAnswer ? "bg-green-pale border-[#BFE8CC]" : "bg-orange-pale border-[#FFD0C4]"
           }`}
         >
-          <div className="font-display font-extrabold text-[17px] text-ink">
+          <div
+            className={`font-display font-extrabold text-[17px] ${
+              picked === correctAnswer ? "text-green-shadow" : "text-ink"
+            }`}
+          >
             {picked === correctAnswer ? "Chính xác!" : "Chưa đúng"}
           </div>
           {current.example && (

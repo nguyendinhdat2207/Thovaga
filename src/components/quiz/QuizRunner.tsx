@@ -145,7 +145,7 @@ export function QuizRunner({
                 onClick={() => selectAndCheck(i)}
                 className={`w-full flex items-center gap-3.5 text-left rounded-2xl px-[18px] py-4 border transition-colors ${
                   showRight
-                    ? "bg-yellow-pale border-yellow border-2"
+                    ? "bg-green-pale border-green border-2"
                     : showWrong
                       ? "bg-orange-pale border-orange border-2"
                       : isPicked
@@ -155,7 +155,13 @@ export function QuizRunner({
               >
                 <span
                   className={`w-7 h-7 shrink-0 rounded-lg grid place-items-center font-display font-extrabold text-[13px] ${
-                    showRight || isPicked ? "bg-yellow text-ink" : "bg-badge-bg text-ink-muted"
+                    showRight
+                      ? "bg-green text-white"
+                      : showWrong
+                        ? "bg-orange text-white"
+                        : isPicked
+                          ? "bg-yellow text-ink"
+                          : "bg-badge-bg text-ink-muted"
                   }`}
                 >
                   {LETTERS[i]}
@@ -167,7 +173,7 @@ export function QuizRunner({
                 {(showRight || showWrong) && (
                   <span
                     className={`font-display font-extrabold text-xs whitespace-nowrap ${
-                      showRight ? "text-yellow-shadow" : "text-orange"
+                      showRight ? "text-green-shadow" : "text-orange"
                     }`}
                   >
                     {showRight ? "đáp án đúng" : "bạn chọn"}
@@ -182,11 +188,15 @@ export function QuizRunner({
           <div
             className={`mt-[18px] border rounded-2xl px-[18px] py-4 ${
               picked === current.correct_option
-                ? "bg-yellow-pale border-[#FFE1A1]"
+                ? "bg-green-pale border-[#BFE8CC]"
                 : "bg-orange-pale border-[#FFD0C4]"
             }`}
           >
-            <div className="font-display font-extrabold text-[17px] text-ink">
+            <div
+              className={`font-display font-extrabold text-[17px] ${
+                picked === current.correct_option ? "text-green-shadow" : "text-ink"
+              }`}
+            >
               {picked === current.correct_option ? "Chính xác!" : "Chưa đúng"}
             </div>
             {current.explanation && (

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Deck, Question, Subject } from "@/lib/database.types";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, optionLetter } from "@/lib/format";
 
 type DeckWithSubject = Deck & { subject: Pick<Subject, "id" | "name" | "category"> | null };
 
@@ -13,8 +13,6 @@ interface AnswerRecord {
   question_id: string;
   selected_option: number | null;
 }
-
-const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 export function QuizRunner({
   deck,
@@ -164,7 +162,7 @@ export function QuizRunner({
                           : "bg-badge-bg text-ink-muted"
                   }`}
                 >
-                  {LETTERS[i]}
+                  {optionLetter(i)}
                 </span>
                 <span className={`text-[17px] text-ink ${isPicked || showRight ? "font-extrabold" : "font-bold"}`}>
                   {label}

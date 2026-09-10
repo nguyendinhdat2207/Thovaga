@@ -3,6 +3,9 @@ import { withAuth, BadRequestError } from "@/lib/api/route-helpers";
 
 const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 const BUCKET = "documents";
+/** Hạn của link xem trước trả về ngay sau khi tải lên. Bucket là riêng tư nên
+ * link phải ký; hết hạn thì sinh lại từ `path` đã lưu trong DB. */
+const PREVIEW_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 ngày
 
 function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -32,12 +35,9 @@ export const POST = withAuth(async ({ supabase, user, req }) => {
     .upload(path, file, { contentType: file.type || undefined });
   if (uploadErr) throw uploadErr;
 
-  // Bucket riêng tư, nên trả kèm signed URL (7 ngày) để xem trước ngay lúc tải lên.
-  // `source_file_url` lưu trong DB nên lưu `path` (ổn định) — sinh lại signed URL
-  // khi cần hiển thị, vì signed URL sẽ hết hạn.
   const { data: signed } = await supabase.storage
     .from(BUCKET)
-    .createSignedUrl(path, 60 * 60 * 24 * 7);
+    .createSignedUrl(path, PREVIEW_URL_TTL_SECONDS);
 
   return NextResponse.json(
     { path, previewUrl: signed?.signedUrl ?? null, name: file.name, size: file.size },

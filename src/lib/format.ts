@@ -19,20 +19,10 @@ export function computeScore(correct: number, total: number): number {
   return Math.round((correct / total) * 100) / 10;
 }
 
-const WEEKDAY_LABELS_VI = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
-export function weekdayLabelVi(date: Date): string {
-  return WEEKDAY_LABELS_VI[date.getDay()];
-}
-
-export function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-export function daysAgo(n: number): Date {
-  const d = startOfDay(new Date());
-  d.setDate(d.getDate() - n);
-  return d;
+/** Nhãn lựa chọn của câu trắc nghiệm: 0 → "A", 1 → "B", ...
+ *
+ * Trước đây là mảng cứng 6 phần tử, trong khi trình đọc markdown chấp nhận
+ * tới chữ Z — đề nào có hơn 6 lựa chọn thì nhãn hiện ra "undefined". */
+export function optionLetter(index: number): string {
+  return String.fromCharCode(65 + index);
 }

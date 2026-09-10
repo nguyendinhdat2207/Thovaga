@@ -1,14 +1,10 @@
--- Seed vài môn học mẫu để có nơi import bộ đề vào ngay sau khi deploy.
--- Không seed sẵn deck/câu hỏi/lịch sử — dữ liệu thật do bạn tự import qua
--- POST /api/decks/import hoặc màn "Tải đề lên".
-
-insert into subjects (name, category)
-select v.name, v.category
-from (values
-  ('Cấu trúc dữ liệu & Thuật toán', 'school'),
-  ('Cơ sở dữ liệu', 'school'),
-  ('SQL nâng cao', 'data_ai'),
-  ('Apache Spark', 'data_ai'),
-  ('TOEIC · Part 5 Ngữ pháp', 'toeic')
-) as v(name, category)
-where not exists (select 1 from subjects s where s.name = v.name);
+-- Migration này trước đây seed 5 môn học mẫu (Cấu trúc dữ liệu, Cơ sở dữ liệu,
+-- SQL nâng cao, Apache Spark, TOEIC Part 5) để có chỗ import đề ngay sau khi
+-- deploy.
+--
+-- Đã bỏ phần seed: các môn mẫu đó không còn dùng và đã bị xoá khỏi cơ sở dữ
+-- liệu thật; nếu giữ lại, mỗi lần dựng lại DB từ đầu chúng sẽ quay về. Môn học
+-- nay được tạo tự động khi import file markdown có dòng "Subject:".
+--
+-- Giữ lại file (thay vì xoá) để thứ tự đánh số migration không đứt quãng.
+select 1;

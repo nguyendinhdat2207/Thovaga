@@ -2,35 +2,58 @@
 
 import { useMemo, useState } from "react";
 import type { VocabWordWithProgress } from "@/lib/queries/vocab";
+import { Button } from "@/components/ui/Button";
 
 interface DeckOption {
   id: string;
   title: string;
 }
 
-function isDue(word: VocabWordWithProgress): boolean {
-  if (!word.progress) return true;
-  return word.progress.next_review <= new Date().toISOString().slice(0, 10);
-}
+/** Số thẻ hiển thị mỗi lần — kho từ hàng trăm mục, dựng hết một lúc thì
+ * cuộn giật trên điện thoại. Lọc/tìm kiếm vẫn chạy trên toàn bộ dữ liệu. */
+const PAGE_SIZE = 60;
 
 export function VocabBank({
   decks,
   words,
+  /** Ngày hôm nay theo giờ ứng dụng, tính ở server để không lệch múi giờ. */
+  today,
 }: {
   decks: DeckOption[];
   words: VocabWordWithProgress[];
+  today: string;
 }) {
   const [deckFilter, setDeckFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const deckTitleById = useMemo(() => new Map(decks.map((d) => [d.id, d.title] as const)), [decks]);
 
-  const filtered = words.filter((w) => {
-    const matchDeck = deckFilter === "all" || w.deck_id === deckFilter;
+  const isDue = (word: VocabWordWithProgress) =>
+    !word.progress || word.progress.next_review <= today;
+
+  const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matchSearch = !q || w.en.toLowerCase().includes(q) || w.vi.toLowerCase().includes(q);
-    return matchDeck && matchSearch;
-  });
+    return words.filter((w) => {
+      const matchDeck = deckFilter === "all" || w.deck_id === deckFilter;
+      const matchSearch = !q || w.en.toLowerCase().includes(q) || w.vi.toLowerCase().includes(q);
+      return matchDeck && matchSearch;
+    });
+  }, [words, deckFilter, search]);
+
+  const visible = filtered.slice(0, visibleCount);
+
+  // Đổi bộ lọc thì quay lại trang đầu, tránh trường hợp kết quả mới ít hơn số
+  // thẻ đang mở mà vẫn hiện nút "Xem thêm".
+  function changeFilter(next: string) {
+    setDeckFilter(next);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  function changeSearch(next: string) {
+    setSearch(next);
+    setVisibleCount(PAGE_SIZE);
+  }
 
   return (
     <div className="max-w-[1160px] mx-auto px-5 py-6 pb-10">
@@ -41,14 +64,14 @@ export function VocabBank({
       <input
         type="text"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => changeSearch(e.target.value)}
         placeholder="Tìm từ..."
         className="w-full border border-border rounded-xl px-3.5 py-3 font-bold text-[15px] text-ink outline-none focus:border-yellow mb-3"
       />
 
       <div className="flex gap-2 flex-wrap mb-5">
         <button
-          onClick={() => setDeckFilter("all")}
+          onClick={() => changeFilter("all")}
           className={`px-3.5 py-1.5 rounded-full font-bold text-xs border ${
             deckFilter === "all" ? "bg-ink text-white border-ink" : "border-border text-ink-muted"
           }`}
@@ -58,7 +81,7 @@ export function VocabBank({
         {decks.map((d) => (
           <button
             key={d.id}
-            onClick={() => setDeckFilter(d.id)}
+            onClick={() => changeFilter(d.id)}
             className={`px-3.5 py-1.5 rounded-full font-bold text-xs border ${
               deckFilter === d.id ? "bg-ink text-white border-ink" : "border-border text-ink-muted"
             }`}
@@ -69,7 +92,7 @@ export function VocabBank({
       </div>
 
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-        {filtered.map((w) => (
+        {visible.map((w) => (
           <div key={w.id} className="border border-border rounded-2xl p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="font-display font-extrabold text-[17px] text-ink">{w.en}</div>
@@ -89,6 +112,14 @@ export function VocabBank({
           </div>
         ))}
       </div>
+
+      {visible.length < filtered.length && (
+        <div className="text-center mt-5">
+          <Button variant="ghost" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
+            Xem thêm ({filtered.length - visible.length} từ)
+          </Button>
+        </div>
+      )}
 
       {filtered.length === 0 && (
         <p className="font-bold text-sm text-ink-muted text-center py-10">Không tìm thấy từ nào.</p>

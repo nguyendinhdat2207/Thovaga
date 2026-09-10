@@ -6,29 +6,14 @@ import type { VocabWordWithProgress } from "@/lib/queries/vocab";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
+// Thứ tự thẻ do server trộn sẵn (getFlashcardWords), nên component không gọi
+// Math.random lúc render — không còn lệch hydration để phải vá bằng useEffect.
 export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
   const router = useRouter();
-  // Giữ nguyên thứ tự lúc render server để tránh lệch hydration, xáo trộn
-  // sau khi mount ở client (chỉ chạy trên trình duyệt).
-  const [queue, setQueue] = useState(words);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- xáo trộn client-only có chủ đích, tránh lệch hydration
-    setQueue(shuffle(words));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const queue = words;
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
-  const [saving, setSaving] = useState(false);
   const [startedAt, setStartedAt] = useState(() => new Date());
   const sessionSavedRef = useRef(false);
 
@@ -56,18 +41,18 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
-  async function answer(know: boolean) {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await fetch("/api/vocab/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word_id: current.id, mode: "flashcard", know }),
-      });
-    } finally {
-      setSaving(false);
-    }
+  function answer(know: boolean) {
+    // Sang thẻ tiếp theo ngay, không đợi mạng: việc lưu tiến trình không ảnh
+    // hưởng tới điều người dùng nhìn thấy, mà chờ await ở đây thì mạng chậm là
+    // thẻ đứng im. Lỗi mạng cũng chỉ làm mất tiến trình lần này.
+    fetch("/api/vocab/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word_id: current.id, mode: "flashcard", know }),
+    }).catch(() => {
+      // Không lưu được tiến trình lần này — không chặn phiên ôn tập.
+    });
+
     if (know) setKnownCount((c) => c + 1);
     setFlipped(false);
     setIndex((i) => i + 1);
@@ -143,10 +128,10 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
 
       {flipped ? (
         <div className="flex gap-3 mt-5">
-          <Button variant="danger" className="flex-1" disabled={saving} onClick={() => answer(false)}>
+          <Button variant="danger" className="flex-1" onClick={() => answer(false)}>
             Chưa nhớ
           </Button>
-          <Button className="flex-1" disabled={saving} onClick={() => answer(true)}>
+          <Button className="flex-1" onClick={() => answer(true)}>
             Đã nhớ
           </Button>
         </div>

@@ -122,31 +122,57 @@ export interface AttemptResult {
   }[];
 }
 
+// Hình dạng dữ liệu trả về từ nested select của PostgREST. Khai báo tường minh
+// để dùng .returns<T>() thay vì ép kiểu `as unknown as T` — kiểu sai sẽ báo lúc
+// biên dịch, đúng chỗ dễ nhầm nhất.
+type AttemptWithDeck = Attempt & {
+  deck: {
+    id: string;
+    title: string;
+    subject_id: string;
+    subject: { name: string } | null;
+  } | null;
+};
+
+interface WrongAnswerRow {
+  selected_option: number | null;
+  question: {
+    prompt: string;
+    options: string[];
+    correct_option: number;
+    explanation: string | null;
+  } | null;
+}
+
 export async function getAttemptResult(
   supabase: SupabaseClient<Database>,
   attemptId: string
 ): Promise<AttemptResult | null> {
-  const { data: attempt, error: attemptErr } = await supabase
-    .from("attempts")
-    .select("*")
-    .eq("id", attemptId)
-    .maybeSingle();
+  // Lượt làm bài (kèm deck và tên môn qua nested select) và danh sách câu sai
+  // không phụ thuộc nhau nên chạy song song. Trước đây là 5 lượt gọi nối đuôi.
+  const [
+    { data: attempt, error: attemptErr },
+    { data: wrongRows, error: wrongErr },
+  ] = await Promise.all([
+    supabase
+      .from("attempts")
+      .select("*, deck:decks(id, title, subject_id, subject:subjects(name))")
+      .eq("id", attemptId)
+      .maybeSingle<AttemptWithDeck>(),
+    supabase
+      .from("attempt_answers")
+      .select(
+        "selected_option, question:questions(prompt, options, correct_option, explanation)"
+      )
+      .eq("attempt_id", attemptId)
+      .eq("is_correct", false)
+      .returns<WrongAnswerRow[]>(),
+  ]);
   if (attemptErr) throw attemptErr;
-  if (!attempt) return null;
+  if (wrongErr) throw wrongErr;
+  if (!attempt?.deck) return null;
 
-  const { data: deck, error: deckErr } = await supabase
-    .from("decks")
-    .select("id, title, subject_id")
-    .eq("id", attempt.deck_id)
-    .maybeSingle();
-  if (deckErr) throw deckErr;
-  if (!deck) return null;
-
-  const { data: subject } = await supabase
-    .from("subjects")
-    .select("name")
-    .eq("id", deck.subject_id)
-    .maybeSingle();
+  const { deck, ...attemptRow } = attempt;
 
   const { data: previousAttempts, error: prevErr } = await supabase
     .from("attempts")
@@ -157,32 +183,22 @@ export async function getAttemptResult(
     .limit(2);
   if (prevErr) throw prevErr;
 
-  const { data: wrongRows, error: wrongErr } = await supabase
-    .from("attempt_answers")
-    .select("selected_option, is_correct, question_id, questions(prompt, options, correct_option, explanation)")
-    .eq("attempt_id", attemptId)
-    .eq("is_correct", false);
-  if (wrongErr) throw wrongErr;
-
-  type WrongRow = {
-    selected_option: number | null;
-    questions: { prompt: string; options: string[]; correct_option: number; explanation: string | null } | null;
-  };
-
-  const wrongAnswers = ((wrongRows ?? []) as unknown as WrongRow[])
-    .filter((r) => r.questions)
+  const wrongAnswers = (wrongRows ?? [])
+    .filter((r): r is WrongAnswerRow & { question: NonNullable<WrongAnswerRow["question"]> } =>
+      r.question !== null
+    )
     .map((r) => ({
-      prompt: r.questions!.prompt,
-      options: r.questions!.options,
-      correctOption: r.questions!.correct_option,
-      explanation: r.questions!.explanation,
+      prompt: r.question.prompt,
+      options: r.question.options,
+      correctOption: r.question.correct_option,
+      explanation: r.question.explanation,
       pickedOption: r.selected_option,
     }));
 
   return {
-    attempt,
-    deck,
-    subjectName: subject?.name ?? "",
+    attempt: attemptRow,
+    deck: { id: deck.id, title: deck.title, subject_id: deck.subject_id },
+    subjectName: deck.subject?.name ?? "",
     previousAttempts: (previousAttempts ?? []).slice().reverse(),
     wrongAnswers,
   };

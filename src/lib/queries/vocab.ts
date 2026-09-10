@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, VocabWord, VocabProgress } from "@/lib/database.types";
 import { parseSessionWindow, toCount, ValidationError, type SessionWindow } from "@/lib/validate";
-import { appToday } from "@/lib/queries/stats";
+import { shuffleInPlace, shuffled } from "@/lib/shuffle";
 
 export class VocabSessionError extends Error {
   status: number;
@@ -56,13 +56,10 @@ export async function recordVocabSession(
   if (error) throw error;
 }
 
-// Ngày "hôm nay" theo giờ Việt Nam — xem appToday() trong queries/stats.ts.
-// Trước đây dùng new Date().toISOString().slice(0,10) tức ngày UTC, khiến từ
-// 00:00 đến 07:00 sáng hệ thống coi là hôm qua và bỏ sót từ đến hạn ôn.
-//
-// Bảng interval Leitner (0,1,2,4,7,15 ngày) nay nằm trong hàm
-// apply_vocab_progress ở Postgres (migration 0009), không còn lặp lại ở đây.
-const todayStr = appToday;
+// Mọi phép tính theo ngày ("đến hạn ôn", interval Leitner 0/1/2/4/7/15 ngày)
+// nay nằm ở Postgres: app_today() theo giờ Việt Nam và apply_vocab_progress
+// (migration 0008, 0009). Trước đây làm ở đây bằng ngày UTC nên từ 00:00 đến
+// 07:00 sáng hệ thống coi là hôm qua và bỏ sót từ đến hạn.
 
 export interface VocabDeckWithStats {
   id: string;
@@ -91,34 +88,80 @@ export async function getVocabDecks(
 
 export type VocabWordWithProgress = VocabWord & { progress: VocabProgress | null };
 
+/** Đếm số từ khớp bộ lọc — dùng cho phân trang kho từ. */
+export async function getVocabWordsCount(
+  supabase: SupabaseClient<Database>,
+  options: { deckId?: string; dueOnly?: boolean } = {}
+): Promise<number> {
+  const { data, error } = await supabase.rpc("vocab_words_count", {
+    p_deck_id: options.deckId ?? null,
+    p_due_only: options.dueOnly ?? false,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+export interface GetVocabWordsOptions {
+  deckId?: string;
+  dueOnly?: boolean;
+  /** Số từ tối đa trả về. Bỏ trống nghĩa là lấy hết (dùng cho phiên ôn tập). */
+  limit?: number;
+  /** Vị trí bắt đầu, dùng cùng `limit` để phân trang kho từ. */
+  offset?: number;
+}
+
+// Lấy từ kèm tiến trình ôn tập, join sẵn bằng nested select.
+//
+// Việc lọc "đến hạn ôn" làm ở SQL (dùng index vocab_progress(next_review) thêm
+// ở migration 0008) chứ không phải tải hết về rồi filter ở JS — kho từ chỉ phình
+// to theo thời gian, lọc ở đây thì mọi bộ lọc đều phải trả giá bằng cả bảng.
 export async function getVocabWords(
+  supabase: SupabaseClient<Database>,
+  options: GetVocabWordsOptions = {}
+): Promise<VocabWordWithProgress[]> {
+  const { data, error } = await supabase.rpc("vocab_words_with_progress", {
+    p_deck_id: options.deckId ?? null,
+    p_due_only: options.dueOnly ?? false,
+    p_limit: options.limit ?? null,
+    p_offset: options.offset ?? 0,
+  });
+  if (error) throw error;
+
+  // Hàm SQL trả bảng phẳng (từ + cột tiến trình); dựng lại hình dạng lồng nhau
+  // mà phần còn lại của ứng dụng đang dùng.
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    deck_id: row.deck_id,
+    en: row.en,
+    vi: row.vi,
+    example: row.example,
+    distractors: row.distractors,
+    progress:
+      row.next_review === null
+        ? null
+        : {
+            word_id: row.id,
+            box: row.box,
+            correct: row.correct,
+            wrong: row.wrong,
+            next_review: row.next_review,
+            updated_at: row.updated_at,
+          },
+  }));
+}
+
+/**
+ * Danh sách từ cho phiên flashcard, đã trộn sẵn thứ tự ở server.
+ *
+ * Trộn ở server để component không gọi Math.random lúc render — trước đây phải
+ * render theo thứ tự gốc rồi trộn lại trong useEffect để tránh lệch hydration,
+ * kèm theo hai dòng eslint-disable.
+ */
+export async function getFlashcardWords(
   supabase: SupabaseClient<Database>,
   options: { deckId?: string; dueOnly?: boolean } = {}
 ): Promise<VocabWordWithProgress[]> {
-  let query = supabase.from("vocab_words").select("*");
-  if (options.deckId) query = query.eq("deck_id", options.deckId);
-  const { data: words, error: wordsErr } = await query;
-  if (wordsErr) throw wordsErr;
-
-  const wordIds = (words ?? []).map((w) => w.id);
-  const { data: progressRows, error: progressErr } =
-    wordIds.length > 0
-      ? await supabase.from("vocab_progress").select("*").in("word_id", wordIds)
-      : { data: [] as VocabProgress[], error: null };
-  if (progressErr) throw progressErr;
-
-  const progressByWordId = new Map((progressRows ?? []).map((p) => [p.word_id, p] as const));
-  const today = todayStr();
-
-  const withProgress: VocabWordWithProgress[] = (words ?? []).map((w) => ({
-    ...w,
-    progress: progressByWordId.get(w.id) ?? null,
-  }));
-
-  if (options.dueOnly) {
-    return withProgress.filter((w) => !w.progress || w.progress.next_review <= today);
-  }
-  return withProgress;
+  return shuffled(await getVocabWords(supabase, options));
 }
 
 export interface VocabQuizItem {
@@ -133,13 +176,6 @@ export interface VocabQuizItem {
 /** Số lựa chọn mỗi câu quiz từ vựng (1 đúng + 3 nhiễu). */
 export const VOCAB_QUIZ_OPTION_COUNT = 4;
 
-function shuffleInPlace<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
 
 /**
  * Chuẩn bị sẵn câu hỏi quiz ở server: mỗi từ kèm đúng 4 lựa chọn đã trộn.
@@ -162,7 +198,9 @@ export async function getVocabQuizItems(
   if (error) throw error;
   const meaningPool = Array.from(new Set((allMeanings ?? []).map((w) => w.vi)));
 
-  return words.map((word) => {
+  // Trộn cả thứ tự câu hỏi ở đây luôn, để component không phải trộn lúc render
+  // (nguồn gốc của lệch hydration trước đây).
+  return shuffled(words).map((word) => {
     // Ưu tiên đáp án nhiễu đã soạn tay (khó phân biệt hơn nhiễu ngẫu nhiên).
     const authored = word.distractors ?? [];
     const distractors =

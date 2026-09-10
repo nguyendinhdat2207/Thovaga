@@ -290,6 +290,31 @@ export interface Database {
           due_count: number;
         }[];
       };
+      vocab_words_with_progress: {
+        Args: {
+          p_deck_id: string | null;
+          p_due_only: boolean;
+          p_limit: number | null;
+          p_offset: number;
+        };
+        Returns: {
+          id: string;
+          deck_id: string;
+          en: string;
+          vi: string;
+          example: string | null;
+          distractors: string[] | null;
+          box: number;
+          correct: number;
+          wrong: number;
+          next_review: string | null;
+          updated_at: string;
+        }[];
+      };
+      vocab_words_count: {
+        Args: { p_deck_id: string | null; p_due_only: boolean };
+        Returns: number;
+      };
       apply_vocab_progress: {
         Args: { p_word_id: string; p_correct: boolean };
         Returns: Database["public"]["Tables"]["vocab_progress"]["Row"][];

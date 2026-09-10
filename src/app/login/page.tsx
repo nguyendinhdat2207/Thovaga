@@ -1,5 +1,6 @@
 import { Mascot } from "@/components/ui/Mascot";
 import { Button } from "@/components/ui/Button";
+import { PasswordField } from "@/components/login/PasswordField";
 import { signIn } from "./actions";
 
 export default async function LoginPage({
@@ -34,15 +35,7 @@ export default async function LoginPage({
               className="w-full border border-border rounded-xl px-3.5 py-3 font-bold text-[15px] text-ink outline-none focus:border-yellow"
             />
           </div>
-          <div>
-            <label className="font-bold text-xs text-ink-muted mb-1.5 block">Mật khẩu</label>
-            <input
-              type="password"
-              name="password"
-              required
-              className="w-full border border-border rounded-xl px-3.5 py-3 font-bold text-[15px] text-ink outline-none focus:border-yellow"
-            />
-          </div>
+          <PasswordField />
 
           {error && (
             <p className="text-sm font-bold text-orange bg-orange-pale border border-orange rounded-xl px-3 py-2">

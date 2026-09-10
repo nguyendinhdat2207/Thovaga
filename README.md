@@ -112,20 +112,49 @@ Answer: A
 
 ## Cấu trúc backend
 
-- `supabase/migrations/` — schema (`0001_init.sql`) + seed 5 môn học mẫu (`0002_seed_subjects.sql`).
-- `src/lib/database.types.ts` — type Database viết tay khớp schema (Row/Insert/Update/Relationships).
-- `src/lib/supabase/{client,server}.ts` — Supabase client cho Client Component / Server
-  Component-Route Handler, theo convention `@supabase/ssr`.
+- `supabase/migrations/` — schema, RLS, và các hàm Postgres. Từ `0006` trở đi, những thao
+  tác ghi nhiều bảng và mọi phép cộng dồn/lọc theo ngày đều nằm ở DB (xem phần dưới).
+- `src/lib/database.types.ts` — type Database viết tay khớp schema, gồm cả `Functions` cho
+  các hàm gọi qua `supabase.rpc()`.
+- `src/lib/supabase/server.ts` — Supabase client cho Server Component / Route Handler, bọc
+  `cache()` của React để một request chỉ dựng một client.
 - `src/proxy.ts` — refresh session + redirect `/login` nếu chưa đăng nhập (Next.js 16 đổi tên
-  `middleware.ts` thành `proxy.ts`, xem `AGENTS.md`).
+  `middleware.ts` thành `proxy.ts`, xem `AGENTS.md`). Route `/api/*` nhận 401 JSON thay vì
+  redirect sang trang HTML.
+- `src/lib/api/route-helpers.ts` — `withAuth()` bọc mọi route handler: bắt buộc đăng nhập
+  (bằng `getUser()`, có xác minh chữ ký JWT), giới hạn kích thước body, và chuẩn hoá lỗi.
 - `src/lib/queries/` — hàm truy vấn dùng chung giữa Server Component và Route Handler
-  (`subjects.ts`, `decks.ts`, `decks-import.ts`, `attempts.ts`).
-- `src/app/api/` — 6 route handler theo đúng yêu cầu: `GET /api/subjects`,
-  `GET /api/decks/[id]`, `POST /api/attempts`, `GET /api/history`,
-  `POST /api/decks/import`, `POST /api/decks/upload`.
+  (`subjects.ts`, `decks.ts`, `decks-import.ts`, `attempts.ts`, `vocab.ts`, `stats.ts`).
+- `src/app/api/` — 9 route handler: `GET /api/subjects`, `GET /api/decks/[id]`,
+  `POST /api/attempts`, `GET /api/history`, `POST /api/decks/import`,
+  `POST /api/decks/upload`, `POST /api/vocab/{import,progress,sessions}`.
 
-**Điểm số luôn được server tính lại** từ `correct_option` lưu trong DB khi nhận
-`POST /api/attempts` — không tin điểm số client gửi lên.
+### Ba nguyên tắc của tầng ghi dữ liệu
+
+1. **Không tin dữ liệu client gửi lên.** Điểm số luôn được server tính lại từ `correct_option`
+   trong DB. Thời lượng phiên học cũng do server tự tính từ hai mốc thời gian, kẹp trong
+   khoảng hợp lý (`src/lib/validate.ts`) — nếu không, chỉ cần sửa `started_at` là cột "tổng
+   thời gian học" hỏng vĩnh viễn.
+2. **Ghi nhiều bảng thì phải atomic.** Import bộ đề/bộ từ và ghi lượt làm bài đều đi qua hàm
+   plpgsql (`0006_atomic_writes.sql`), không để lại bộ đề rỗng hay lượt làm bài không có
+   đáp án khi lệnh thứ hai lỗi.
+3. **Cộng dồn và lọc theo ngày làm ở Postgres.** `study_total_seconds`, `vocab_deck_stats`,
+   `vocab_words_with_progress`… (`0008`, `0011`). Ngày "hôm nay" luôn theo giờ Việt Nam qua
+   `app_today()` / `appToday()` — dùng ngày UTC thì khung 00:00–07:00 sáng bị tính sang hôm
+   trước.
+
+### Phân quyền
+
+RLS khoá theo bảng `app_owners` (`0007_lock_to_owner.sql`), không phải theo
+`auth.role() = 'authenticated'`. Khác biệt quan trọng: với cách cũ, bất kỳ ai tự đăng ký một
+tài khoản ở project Supabase này đều đọc/xoá được toàn bộ dữ liệu.
+
+> ⚠️ **Việc cần làm thủ công một lần:** vào Supabase Dashboard → Authentication → Sign In /
+> Providers → tắt **Allow new users to sign up**. RLS đã chặn người lạ đọc dữ liệu, nhưng tắt
+> đăng ký thì họ không tạo được tài khoản rác ngay từ đầu.
+
+Muốn thêm người dùng thứ hai: `insert into app_owners (user_id) values ('<uuid>')` từ SQL
+Editor. Mặc định là không có quyền.
 
 ## Deploy
 
@@ -139,6 +168,17 @@ Answer: A
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 4. Deploy. Không cần cấu hình gì thêm — App Router + Route Handlers chạy trực tiếp trên
    Vercel Functions.
+
+## Kiểm thử
+
+```bash
+npm test        # chạy một lượt
+npm run test:watch
+```
+
+Test tập trung vào phần logic thuần dễ hỏng âm thầm: trình đọc markdown
+(`src/lib/markdown-import.test.ts`) và lớp xác thực dữ liệu client gửi lên
+(`src/lib/validate.test.ts`).
 
 ## Việc còn để TODO (đã ghi rõ trong code)
 

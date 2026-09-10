@@ -233,6 +233,9 @@ export interface ImportVocabDeckInput {
   words: ImportVocabWordInput[];
 }
 
+/** Trần số từ mỗi lần import — xem MAX_QUESTIONS_PER_IMPORT ở decks-import.ts. */
+export const MAX_WORDS_PER_IMPORT = 500;
+
 export class ImportVocabError extends Error {
   status: number;
   constructor(message: string, status = 400) {
@@ -247,6 +250,11 @@ function validateImport(input: ImportVocabDeckInput) {
   }
   if (!Array.isArray(input.words) || input.words.length === 0) {
     throw new ImportVocabError("words phải là một danh sách không rỗng.");
+  }
+  if (input.words.length > MAX_WORDS_PER_IMPORT) {
+    throw new ImportVocabError(
+      `Mỗi lần chỉ import tối đa ${MAX_WORDS_PER_IMPORT} từ — hãy tách thành nhiều bộ nhỏ.`
+    );
   }
   input.words.forEach((w, i) => {
     if (!w.en || !w.en.trim()) throw new ImportVocabError(`Từ #${i + 1} thiếu "en".`);

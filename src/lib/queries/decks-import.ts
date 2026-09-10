@@ -17,6 +17,11 @@ export interface ImportDeckInput {
   questions: ImportQuestionInput[];
 }
 
+/** Trần số câu mỗi lần import. Một bộ đề vài nghìn câu gần như chắc chắn là do
+ * dán nhầm file, và insert cả loạt như vậy dễ làm serverless function hết thời
+ * gian giữa chừng. Tách nhỏ cũng đúng với cách dùng thực tế (đề 40 câu/bộ). */
+export const MAX_QUESTIONS_PER_IMPORT = 500;
+
 export class ImportDeckError extends Error {
   status: number;
   constructor(message: string, status = 400) {
@@ -32,6 +37,11 @@ function validate(input: ImportDeckInput) {
   if (!input.title || !input.title.trim()) throw new ImportDeckError("title là bắt buộc.");
   if (!Array.isArray(input.questions) || input.questions.length === 0) {
     throw new ImportDeckError("questions phải là một danh sách không rỗng.");
+  }
+  if (input.questions.length > MAX_QUESTIONS_PER_IMPORT) {
+    throw new ImportDeckError(
+      `Mỗi lần chỉ import tối đa ${MAX_QUESTIONS_PER_IMPORT} câu — hãy tách thành nhiều bộ đề nhỏ.`
+    );
   }
   input.questions.forEach((q, i) => {
     if (!q.prompt || !q.prompt.trim()) {

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { APP_TIMEZONE } from "@/lib/constants";
@@ -10,13 +11,16 @@ import { APP_TIMEZONE } from "@/lib/constants";
 // vào nhau. Việc cộng dồn nằm ở Postgres (migration 0008), tầng này chỉ đổi
 // đơn vị và gắn nhãn hiển thị.
 
-export async function getTotalStudiedMinutes(
+// Bọc cache(): trang chủ gọi hàm này hai lần trong cùng một request — một lần
+// ở layout để hiện tổng giờ trên header, một lần bên trong getHistory. Không
+// bọc thì cùng một phép cộng chạy hai lượt round-trip tới DB ở US.
+export const getTotalStudiedMinutes = cache(async function getTotalStudiedMinutes(
   supabase: SupabaseClient<Database>
 ): Promise<number> {
   const { data, error } = await supabase.rpc("study_total_seconds");
   if (error) throw error;
   return Math.round(Number(data ?? 0) / 60);
-}
+});
 
 export interface DailyStudyMinutes {
   label: string;

@@ -5,7 +5,6 @@ import { getHistory, getContinueDeckId } from "@/lib/queries/attempts";
 import { Mascot } from "@/components/ui/Mascot";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SubjectCard } from "@/components/subjects/SubjectCard";
-import { SubjectRow } from "@/components/subjects/SubjectRow";
 import { WeekChart } from "@/components/WeekChart";
 
 export default async function HomePage() {
@@ -16,9 +15,6 @@ export default async function HomePage() {
     getHistory(supabase),
     getContinueDeckId(supabase),
   ]);
-
-  const schoolSubjects = subjects.filter((s) => s.category === "school");
-  const otherSubjects = subjects.filter((s) => s.category !== "school");
 
   return (
     <div className="max-w-[1160px] mx-auto px-5 py-6 pb-10">
@@ -43,29 +39,14 @@ export default async function HomePage() {
         <div className="flex-1 min-w-[320px] flex flex-col gap-7">
           <section>
             <div className="flex items-baseline gap-2.5 mb-3.5">
-              <h2 className="font-display font-extrabold text-[19px] text-ink">Môn học ở trường</h2>
+              <h2 className="font-display font-extrabold text-[19px] text-ink">Môn học</h2>
             </div>
-            {schoolSubjects.length === 0 ? (
+            {subjects.length === 0 ? (
               <EmptySubjects />
             ) : (
               <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-                {schoolSubjects.map((s) => (
+                {subjects.map((s) => (
                   <SubjectCard key={s.id} subject={s} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <h2 className="font-display font-extrabold text-[19px] text-ink mb-1">
-              Data &amp; AI · TOEIC
-            </h2>
-            {otherSubjects.length === 0 ? (
-              <EmptySubjects />
-            ) : (
-              <div>
-                {otherSubjects.map((s) => (
-                  <SubjectRow key={s.id} subject={s} />
                 ))}
               </div>
             )}

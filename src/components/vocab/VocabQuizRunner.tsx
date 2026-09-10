@@ -193,7 +193,24 @@ export function VocabQuizRunner({
       </div>
 
       {answered && (
-        <Button className="w-full mt-5" onClick={next}>
+        <div
+          className={`mt-[18px] border rounded-2xl px-[18px] py-4 ${
+            picked === correctAnswer ? "bg-yellow-pale border-[#FFE1A1]" : "bg-orange-pale border-[#FFD0C4]"
+          }`}
+        >
+          <div className="font-display font-extrabold text-[17px] text-ink">
+            {picked === correctAnswer ? "Chính xác!" : "Chưa đúng"}
+          </div>
+          {current.example && (
+            <p className="font-bold text-sm leading-relaxed text-ink mt-1 italic">
+              &quot;{current.example}&quot;
+            </p>
+          )}
+        </div>
+      )}
+
+      {answered && (
+        <Button className="w-full mt-4" onClick={next}>
           {index + 1 < queue.length ? "Câu tiếp theo" : "Xem kết quả"}
         </Button>
       )}

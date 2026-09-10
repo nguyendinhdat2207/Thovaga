@@ -59,27 +59,31 @@ export default async function VocabPage() {
           {decks.map((deck) => (
             <div
               key={deck.id}
-              className="flex items-center gap-3.5 flex-wrap py-3.5 px-1 border-b border-border"
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-3.5 py-3.5 px-1 border-b border-border"
             >
-              <div
-                className={`w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center font-display font-extrabold text-sm ${
-                  deck.dueCount > 0 ? "bg-yellow text-ink" : "bg-track text-ink-muted"
-                }`}
-              >
-                {deck.dueCount > 0 ? deck.dueCount : "✓"}
-              </div>
-              <div className="flex-1 min-w-[180px]">
-                <div className="font-display font-extrabold text-[17px] text-ink">{deck.title}</div>
-                <div className="font-bold text-xs text-ink-muted">
-                  {deck.wordCount} từ{deck.dueCount > 0 ? ` · ${deck.dueCount} cần ôn` : ""}
+              <div className="flex items-center gap-3.5 sm:flex-1 min-w-0">
+                <div
+                  className={`w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center font-display font-extrabold text-sm ${
+                    deck.dueCount > 0 ? "bg-yellow text-ink" : "bg-track text-ink-muted"
+                  }`}
+                >
+                  {deck.dueCount > 0 ? deck.dueCount : "✓"}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display font-extrabold text-[17px] text-ink">{deck.title}</div>
+                  <div className="font-bold text-xs text-ink-muted">
+                    {deck.wordCount} từ{deck.dueCount > 0 ? ` · ${deck.dueCount} cần ôn` : ""}
+                  </div>
                 </div>
               </div>
-              <LinkButton href={`/vocab/flashcard?deckId=${deck.id}`} variant="ghost" size="sm">
-                Flashcard
-              </LinkButton>
-              <LinkButton href={`/vocab/quiz?deckId=${deck.id}`} variant="ghost" size="sm">
-                Quiz
-              </LinkButton>
+              <div className="flex gap-2">
+                <LinkButton href={`/vocab/flashcard?deckId=${deck.id}`} variant="ghost" size="sm" className="flex-1 sm:flex-none">
+                  Flashcard
+                </LinkButton>
+                <LinkButton href={`/vocab/quiz?deckId=${deck.id}`} variant="ghost" size="sm" className="flex-1 sm:flex-none">
+                  Quiz
+                </LinkButton>
+              </div>
             </div>
           ))}
         </div>

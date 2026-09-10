@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Baloo_2, Nunito } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,16 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Thỏ & Gà",
   description: "App học tập cá nhân — môn ở trường, Data & AI, TOEIC",
+};
+
+// viewport-fit=cover bắt buộc phải có thì env(safe-area-inset-*) mới trả về
+// giá trị thật (khác 0) — cần cho vùng Dynamic Island / thanh home-indicator
+// trên iPhone, nhất là khi "Thêm vào Màn hình chính" (chạy không có thanh
+// trình duyệt che chắn).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

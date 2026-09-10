@@ -29,7 +29,10 @@ export function AppChrome({
   return (
     <div className="min-h-screen flex flex-col bg-bg">
       {!hideChrome && (
-        <header className="border-b border-border sticky top-0 bg-white z-10">
+        <header
+          className="border-b border-border sticky top-0 bg-white z-10"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
           <div className="max-w-[1160px] mx-auto px-5 py-3 flex items-center gap-4 flex-wrap">
             <Link href="/" className="flex items-center gap-2.5">
               <Mascot size={38} />
@@ -56,7 +59,7 @@ export function AppChrome({
               })}
             </nav>
             <div className="flex-1" />
-            <span className="font-bold text-sm text-ink-muted whitespace-nowrap">
+            <span className="hidden sm:inline font-bold text-sm text-ink-muted whitespace-nowrap">
               {totalStudiedLabel} đã học
             </span>
             <div className="w-[34px] h-[34px] rounded-full border-2 border-border overflow-hidden shrink-0">
@@ -77,7 +80,10 @@ export function AppChrome({
       <main className="flex-1">{children}</main>
 
       {!hideChrome && (
-        <nav className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-4 pt-2 pb-3 px-1.5">
+        <nav
+          className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-4 pt-2 px-1.5"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           {NAV_ITEMS.map((item) => {
             const active = item.match(pathname);
             return (

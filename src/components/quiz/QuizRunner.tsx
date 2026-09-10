@@ -99,7 +99,10 @@ export function QuizRunner({
 
   return (
     <div className="min-h-screen flex flex-col bg-bg">
-      <div className="border-b border-border sticky top-0 bg-white">
+      <div
+        className="border-b border-border sticky top-0 bg-white"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="max-w-[820px] mx-auto px-5 py-3.5 flex items-center gap-3.5">
           <button
             onClick={() => router.push(`/subjects/${deck.subject_id}`)}
@@ -197,7 +200,10 @@ export function QuizRunner({
         )}
       </div>
 
-      <div className="border-t border-border sticky bottom-0 bg-white">
+      <div
+        className="border-t border-border sticky bottom-0 bg-white"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="max-w-[820px] mx-auto px-5 py-4 pb-5 flex items-center justify-between gap-3.5">
           <button onClick={skip} disabled={submitting} className="font-display font-bold text-[15px] text-ink-muted px-1 py-3">
             Bỏ qua

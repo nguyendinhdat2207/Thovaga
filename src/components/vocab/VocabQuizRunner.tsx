@@ -64,14 +64,20 @@ export function VocabQuizRunner({
   const done = index >= queue.length;
   const current = queue[index];
 
-  async function pick(opt: string) {
-    if (answered || submitting) return;
-    setSubmitting(true);
+  // Chỉ chọn — chưa hiện đúng/sai, đợi bấm "Kiểm tra" mới chấm (giống bộ đề
+  // trắc nghiệm thường).
+  function pick(opt: string) {
+    if (answered) return;
     setPicked(opt);
+  }
+
+  async function check() {
+    if (picked === null || answered || submitting) return;
+    setSubmitting(true);
 
     // Hiện đáp án ngay bằng dữ liệu đã có sẵn ở client (word.vi) — không đợi
     // API mới hiện được, để lỗi mạng/timeout không làm UI đứng im.
-    const correct = opt === current.vi;
+    const correct = picked === current.vi;
     const answer = current.vi;
     setCorrectAnswer(answer);
     setAnswered(true);
@@ -88,7 +94,7 @@ export function VocabQuizRunner({
       await fetch("/api/vocab/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word_id: current.id, mode: "quiz", picked: opt }),
+        body: JSON.stringify({ word_id: current.id, mode: "quiz", picked }),
       });
     } catch {
       // Bỏ qua lỗi mạng — UI đã hiện kết quả, chỉ tiến trình ôn tập không lưu
@@ -173,6 +179,7 @@ export function VocabQuizRunner({
         {options.map((opt) => {
           const showRight = answered && opt === correctAnswer;
           const showWrong = answered && opt === picked && opt !== correctAnswer;
+          const isPicked = !answered && opt === picked;
           return (
             <button
               key={opt}
@@ -183,7 +190,9 @@ export function VocabQuizRunner({
                   ? "bg-yellow-pale border-yellow"
                   : showWrong
                     ? "bg-orange-pale border-orange"
-                    : "border-border"
+                    : isPicked
+                      ? "border-yellow"
+                      : "border-border"
               }`}
             >
               {opt}
@@ -209,11 +218,13 @@ export function VocabQuizRunner({
         </div>
       )}
 
-      {answered && (
-        <Button className="w-full mt-4" onClick={next}>
-          {index + 1 < queue.length ? "Câu tiếp theo" : "Xem kết quả"}
-        </Button>
-      )}
+      <Button
+        className="w-full mt-4"
+        disabled={answered ? false : picked === null || submitting}
+        onClick={answered ? next : check}
+      >
+        {answered ? (index + 1 < queue.length ? "Câu tiếp theo" : "Xem kết quả") : "Kiểm tra"}
+      </Button>
     </div>
   );
 }

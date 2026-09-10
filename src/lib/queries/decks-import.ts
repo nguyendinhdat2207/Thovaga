@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Deck } from "@/lib/database.types";
+import type { Database, Deck, SubjectCategory } from "@/lib/database.types";
 
 export interface ImportQuestionInput {
   prompt: string;
@@ -9,7 +9,9 @@ export interface ImportQuestionInput {
 }
 
 export interface ImportDeckInput {
-  subject_id: string;
+  subject_id?: string;
+  subject_name?: string;
+  subject_category?: SubjectCategory;
   title: string;
   source_file_url?: string | null;
   questions: ImportQuestionInput[];
@@ -24,7 +26,9 @@ export class ImportDeckError extends Error {
 }
 
 function validate(input: ImportDeckInput) {
-  if (!input.subject_id) throw new ImportDeckError("subject_id là bắt buộc.");
+  if (!input.subject_id && !input.subject_name) {
+    throw new ImportDeckError("Cần subject_id hoặc subject_name.");
+  }
   if (!input.title || !input.title.trim()) throw new ImportDeckError("title là bắt buộc.");
   if (!Array.isArray(input.questions) || input.questions.length === 0) {
     throw new ImportDeckError("questions phải là một danh sách không rỗng.");
@@ -46,24 +50,53 @@ function validate(input: ImportDeckInput) {
   });
 }
 
+// Tìm môn học theo tên (không phân biệt hoa/thường), tạo mới nếu chưa có —
+// dùng khi import qua markdown chỉ biết tên môn, không biết subject_id.
+async function findOrCreateSubjectByName(
+  supabase: SupabaseClient<Database>,
+  name: string,
+  category: SubjectCategory | undefined
+): Promise<string> {
+  const { data: existing, error: findErr } = await supabase
+    .from("subjects")
+    .select("id")
+    .ilike("name", name.trim())
+    .maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) return existing.id;
+
+  const { data: created, error: createErr } = await supabase
+    .from("subjects")
+    .insert({ name: name.trim(), category: category ?? "school" })
+    .select("id")
+    .single();
+  if (createErr) throw createErr;
+  return created.id;
+}
+
 export async function importDeck(
   supabase: SupabaseClient<Database>,
   input: ImportDeckInput
 ): Promise<Deck & { questionCount: number }> {
   validate(input);
 
-  const { data: subject, error: subjectErr } = await supabase
-    .from("subjects")
-    .select("id")
-    .eq("id", input.subject_id)
-    .maybeSingle();
-  if (subjectErr) throw subjectErr;
-  if (!subject) throw new ImportDeckError("subject_id không tồn tại.", 404);
+  let subjectId = input.subject_id;
+  if (subjectId) {
+    const { data: subject, error: subjectErr } = await supabase
+      .from("subjects")
+      .select("id")
+      .eq("id", subjectId)
+      .maybeSingle();
+    if (subjectErr) throw subjectErr;
+    if (!subject) throw new ImportDeckError("subject_id không tồn tại.", 404);
+  } else {
+    subjectId = await findOrCreateSubjectByName(supabase, input.subject_name!, input.subject_category);
+  }
 
   const { data: deck, error: deckErr } = await supabase
     .from("decks")
     .insert({
-      subject_id: input.subject_id,
+      subject_id: subjectId,
       title: input.title.trim(),
       source_file_url: input.source_file_url ?? null,
     })

@@ -85,6 +85,7 @@ export interface ImportVocabWordInput {
   en: string;
   vi: string;
   example?: string | null;
+  distractors?: string[] | null;
 }
 
 export interface ImportVocabDeckInput {
@@ -132,6 +133,7 @@ export async function importVocabDeck(
       en: w.en.trim(),
       vi: w.vi.trim(),
       example: w.example?.trim() || null,
+      distractors: w.distractors && w.distractors.length > 0 ? w.distractors : null,
     }))
   );
   if (wordsErr) throw wordsErr;

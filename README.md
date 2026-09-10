@@ -28,7 +28,51 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
   khác — server luôn tính lại đúng/sai (`src/lib/queries/vocab.ts#gradeVocabQuizAnswer`), không
   tin client.
 - **Kho từ** (`/vocab/bank`): tìm kiếm + lọc theo bộ từ.
-- **Thêm từ mới** (`/vocab/import`): dán danh sách `từ | nghĩa | ví dụ`, mỗi dòng 1 từ.
+- **Thêm từ mới** (`/vocab/import`): dán danh sách `từ | nghĩa | ví dụ`, mỗi dòng 1 từ, hoặc dùng
+  chế độ "Dán Markdown" bên dưới.
+
+### Import bằng Markdown (dùng cho đề đã OCR sẵn)
+
+Cả `/upload` (trắc nghiệm) và `/vocab/import` (từ vựng) đều có nút **"Dán Markdown"** bên cạnh chế
+độ dán thủ công cũ — dùng khi đã nhờ 1 phiên Claude khác (vd Claude.ai, chụp ảnh/PDF đề thi) OCR
+ra file `.md` theo đúng cấu trúc dưới đây, rồi dán thẳng/chọn file vào web, không cần Claude Code
+xử lý thủ công. Parser dùng chung ở `src/lib/markdown-import.ts`.
+
+**Trắc nghiệm** — `/upload`, chế độ Markdown:
+```
+# Chương 5: Mạng máy tính
+Subject: Mạng máy tính
+Category: school
+
+1. Giao thức nào hoạt động ở tầng transport?
+A. HTTP
+B. TCP
+C. IP
+D. Ethernet
+Answer: B
+Explanation: TCP là giao thức tầng transport.
+```
+- `Subject:` tự tìm môn đã có (không phân biệt hoa/thường) hoặc tự tạo môn mới — không còn bị giới
+  hạn "chỉ chọn được môn có sẵn" như chế độ JSON.
+- `Category:` (`school`/`data_ai`/`toeic`) chỉ cần khi tạo môn mới, mặc định `school`.
+- Hỗ trợ nhãn tiếng Việt: `Đáp án:` thay `Answer:`, `Giải thích:` thay `Explanation:`.
+
+**Từ vựng** — `/vocab/import`, chế độ Markdown:
+```
+# TOEIC Ngày 11
+
+1. run
+Meaning: chạy
+Example: He runs every morning.
+A. chạy
+B. đi bộ
+C. nhảy
+D. bơi
+Answer: A
+```
+- `Meaning:`/`Nghĩa:` tuỳ chọn — bỏ qua thì tự lấy theo đáp án đúng trong A-D.
+- 3 lựa chọn còn lại tự lưu vào cột `distractors` (đáp án nhiễu khi làm quiz từ vựng), khó đoán
+  hơn hẳn cách random nghĩa của từ khác.
 
 ## Chạy local
 

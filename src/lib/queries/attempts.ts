@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Attempt } from "@/lib/database.types";
 import { computeScore } from "@/lib/format";
 import { getVocabSessions } from "@/lib/queries/vocab";
+import { parseSessionWindow, ValidationError, type SessionWindow } from "@/lib/validate";
 
 export interface SubmitAnswerInput {
   question_id: string;
@@ -31,8 +32,18 @@ export async function recordAttempt(
 ): Promise<Attempt> {
   const { deck_id, started_at, finished_at, answers } = input;
 
-  if (!deck_id || !started_at || !finished_at || !Array.isArray(answers) || answers.length === 0) {
-    throw new RecordAttemptError("deck_id, started_at, finished_at, answers là bắt buộc.");
+  if (!deck_id || !Array.isArray(answers) || answers.length === 0) {
+    throw new RecordAttemptError("deck_id và answers là bắt buộc.");
+  }
+
+  // Mốc thời gian do trình duyệt gửi — server tự tính lại duration và chặn
+  // các giá trị vô lý, tránh làm hỏng thống kê "tổng thời gian học".
+  let window: SessionWindow;
+  try {
+    window = parseSessionWindow(started_at, finished_at);
+  } catch (err) {
+    if (err instanceof ValidationError) throw new RecordAttemptError(err.message, err.status);
+    throw err;
   }
 
   const questionIds = answers.map((a) => a.question_id);
@@ -59,34 +70,20 @@ export async function recordAttempt(
   const correctCount = gradedAnswers.filter((a) => a.is_correct).length;
   const totalQuestions = gradedAnswers.length;
   const score = computeScore(correctCount, totalQuestions);
-  const durationSeconds = Math.max(
-    0,
-    Math.round((new Date(finished_at).getTime() - new Date(started_at).getTime()) / 1000)
-  );
 
-  const { data: attempt, error: attemptErr } = await supabase
-    .from("attempts")
-    .insert({
-      deck_id,
-      started_at,
-      finished_at,
-      duration_seconds: durationSeconds,
-      score,
-      total_questions: totalQuestions,
-    })
-    .select()
-    .single();
+  // attempts + attempt_answers ghi trong 1 transaction (hàm record_attempt,
+  // migration 0006) — nếu phần đáp án lỗi thì lượt làm bài cũng không được ghi,
+  // tránh lưu lại kết quả có điểm nhưng không có câu trả lời nào.
+  const { data: attempt, error: attemptErr } = await supabase.rpc("record_attempt", {
+    p_deck_id: deck_id,
+    p_started_at: window.startedAt,
+    p_finished_at: window.finishedAt,
+    p_duration_seconds: window.durationSeconds,
+    p_score: score,
+    p_total_questions: totalQuestions,
+    p_answers: gradedAnswers,
+  });
   if (attemptErr) throw attemptErr;
-
-  const { error: answersErr } = await supabase.from("attempt_answers").insert(
-    gradedAnswers.map((a) => ({
-      attempt_id: attempt.id,
-      question_id: a.question_id,
-      selected_option: a.selected_option,
-      is_correct: a.is_correct,
-    }))
-  );
-  if (answersErr) throw answersErr;
 
   return attempt;
 }

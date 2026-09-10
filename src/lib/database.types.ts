@@ -242,7 +242,52 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    // Hàm Postgres gọi qua supabase.rpc() — xem supabase/migrations/0006_atomic_writes.sql.
+    // Dùng để ghi nhiều bảng trong 1 transaction (import bộ đề/bộ từ, lưu lượt làm bài).
+    Functions: {
+      import_deck: {
+        Args: {
+          p_subject_id: string;
+          p_title: string;
+          p_source_file_url: string | null;
+          p_questions: {
+            prompt: string;
+            options: string[];
+            correct_option: number;
+            explanation: string | null;
+          }[];
+        };
+        Returns: string;
+      };
+      import_vocab_deck: {
+        Args: {
+          p_title: string;
+          p_words: {
+            en: string;
+            vi: string;
+            example: string | null;
+            distractors: string[] | null;
+          }[];
+        };
+        Returns: string;
+      };
+      record_attempt: {
+        Args: {
+          p_deck_id: string;
+          p_started_at: string;
+          p_finished_at: string;
+          p_duration_seconds: number;
+          p_score: number;
+          p_total_questions: number;
+          p_answers: {
+            question_id: string;
+            selected_option: number | null;
+            is_correct: boolean;
+          }[];
+        };
+        Returns: Database["public"]["Tables"]["attempts"]["Row"];
+      };
+    };
   };
 }
 

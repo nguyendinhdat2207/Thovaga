@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ảnh chụp/log tạm của Playwright MCP khi kiểm thử
+.playwright-mcp/

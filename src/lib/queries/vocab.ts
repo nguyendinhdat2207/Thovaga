@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, VocabWord, VocabProgress } from "@/lib/database.types";
+import { parseSessionWindow, toCount, ValidationError, type SessionWindow } from "@/lib/validate";
 
 export class VocabSessionError extends Error {
   status: number;
@@ -17,27 +18,39 @@ export interface RecordVocabSessionInput {
   correct_count: number;
 }
 
-// Ghi thời lượng 1 phiên học từ vựng (flashcard hoặc quiz) — server luôn tự
-// tính duration từ started_at/finished_at, không tin số giây do client gửi.
+const VOCAB_SESSION_MODES = ["flashcard", "quiz"] as const;
+
+// Ghi thời lượng 1 phiên học từ vựng (flashcard hoặc quiz). Toàn bộ input đến
+// từ trình duyệt nên phải xác thực: mode phải nằm trong danh sách cho phép,
+// duration do server tự tính và kẹp lại (xem src/lib/validate.ts), số đếm phải
+// là số nguyên không âm và correct_count không thể vượt word_count.
 export async function recordVocabSession(
   supabase: SupabaseClient<Database>,
   input: RecordVocabSessionInput
 ) {
-  if (!input.mode || !input.started_at || !input.finished_at) {
-    throw new VocabSessionError("mode, started_at, finished_at là bắt buộc.");
+  if (!VOCAB_SESSION_MODES.includes(input?.mode)) {
+    throw new VocabSessionError(`mode phải là ${VOCAB_SESSION_MODES.join(" hoặc ")}.`);
   }
-  const durationSeconds = Math.max(
-    0,
-    Math.round((new Date(input.finished_at).getTime() - new Date(input.started_at).getTime()) / 1000)
-  );
+
+  let window: SessionWindow;
+  let wordCount: number;
+  let correctCount: number;
+  try {
+    window = parseSessionWindow(input.started_at, input.finished_at);
+    wordCount = toCount(input.word_count, "word_count");
+    correctCount = Math.min(toCount(input.correct_count, "correct_count"), wordCount);
+  } catch (err) {
+    if (err instanceof ValidationError) throw new VocabSessionError(err.message, err.status);
+    throw err;
+  }
 
   const { error } = await supabase.from("vocab_sessions").insert({
     mode: input.mode,
-    started_at: input.started_at,
-    finished_at: input.finished_at,
-    duration_seconds: durationSeconds,
-    word_count: input.word_count ?? 0,
-    correct_count: input.correct_count ?? 0,
+    started_at: window.startedAt,
+    finished_at: window.finishedAt,
+    duration_seconds: window.durationSeconds,
+    word_count: wordCount,
+    correct_count: correctCount,
   });
   if (error) throw error;
 }
@@ -178,25 +191,20 @@ export async function importVocabDeck(
 ): Promise<{ id: string; title: string; wordCount: number }> {
   validateImport(input);
 
-  const { data: deck, error: deckErr } = await supabase
-    .from("vocab_decks")
-    .insert({ title: input.title.trim() })
-    .select()
-    .single();
-  if (deckErr) throw deckErr;
-
-  const { error: wordsErr } = await supabase.from("vocab_words").insert(
-    input.words.map((w) => ({
-      deck_id: deck.id,
+  // Deck + words ghi trong 1 transaction (hàm import_vocab_deck, migration
+  // 0006) — tránh để lại bộ từ rỗng khi phần từ vựng insert lỗi.
+  const { data: deckId, error: rpcErr } = await supabase.rpc("import_vocab_deck", {
+    p_title: input.title.trim(),
+    p_words: input.words.map((w) => ({
       en: w.en.trim(),
       vi: w.vi.trim(),
       example: w.example?.trim() || null,
       distractors: w.distractors && w.distractors.length > 0 ? w.distractors : null,
-    }))
-  );
-  if (wordsErr) throw wordsErr;
+    })),
+  });
+  if (rpcErr) throw rpcErr;
 
-  return { id: deck.id, title: deck.title, wordCount: input.words.length };
+  return { id: deckId, title: input.title.trim(), wordCount: input.words.length };
 }
 
 export class VocabProgressError extends Error {

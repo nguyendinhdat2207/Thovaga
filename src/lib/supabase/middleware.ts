@@ -32,6 +32,12 @@ export async function updateSession(request: NextRequest) {
   const isPublic = path.startsWith("/login") || path.startsWith("/api/auth");
 
   if (!isLoggedIn && !isPublic) {
+    // Route API phải nhận 401 JSON, không phải redirect sang trang HTML /login:
+    // fetch() ở client sẽ đi theo redirect rồi nhận về HTML, làm res.json()
+    // throw và người dùng thấy lỗi khó hiểu thay vì "phiên đã hết hạn".
+    if (path.startsWith("/api")) {
+      return NextResponse.json({ error: "Phiên đăng nhập đã hết hạn." }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);

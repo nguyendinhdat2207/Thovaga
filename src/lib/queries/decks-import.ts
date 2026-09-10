@@ -93,27 +93,27 @@ export async function importDeck(
     subjectId = await findOrCreateSubjectByName(supabase, input.subject_name!, input.subject_category);
   }
 
-  const { data: deck, error: deckErr } = await supabase
-    .from("decks")
-    .insert({
-      subject_id: subjectId,
-      title: input.title.trim(),
-      source_file_url: input.source_file_url ?? null,
-    })
-    .select()
-    .single();
-  if (deckErr) throw deckErr;
-
-  const { error: questionsErr } = await supabase.from("questions").insert(
-    input.questions.map((q) => ({
-      deck_id: deck.id,
+  // Deck + questions ghi trong 1 transaction (hàm import_deck, migration 0006):
+  // nếu phần câu hỏi lỗi thì deck cũng không được tạo, không để lại bộ đề rỗng.
+  const { data: deckId, error: rpcErr } = await supabase.rpc("import_deck", {
+    p_subject_id: subjectId,
+    p_title: input.title.trim(),
+    p_source_file_url: input.source_file_url ?? null,
+    p_questions: input.questions.map((q) => ({
       prompt: q.prompt,
       options: q.options,
       correct_option: q.correct_option,
       explanation: q.explanation ?? null,
-    }))
-  );
-  if (questionsErr) throw questionsErr;
+    })),
+  });
+  if (rpcErr) throw rpcErr;
+
+  const { data: deck, error: deckErr } = await supabase
+    .from("decks")
+    .select("*")
+    .eq("id", deckId)
+    .single();
+  if (deckErr) throw deckErr;
 
   return { ...deck, questionCount: input.questions.length };
 }

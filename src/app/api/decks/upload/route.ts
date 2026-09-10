@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, BadRequestError } from "@/lib/api/route-helpers";
 
 const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 const BUCKET = "documents";
@@ -14,32 +14,23 @@ function sanitizeFileName(name: string) {
 // TODO(v2 - trích câu hỏi tự động bằng AI): sau khi có file gốc ở đây, bước tiếp
 // theo là đọc file này (PDF/DOCX/ảnh), gọi một model để tách câu hỏi + đáp án,
 // rồi gọi importDeck() (xem src/lib/queries/decks-import.ts) để tạo deck +
-// questions tự động — hiện tại người dùng vẫn cần tự dán JSON qua
+// questions tự động — hiện tại người dùng vẫn cần tự dán JSON/Markdown qua
 // POST /api/decks/import sau khi tải file lên ở đây.
-export async function POST(req: Request) {
-  const supabase = await createClient();
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) {
-    return NextResponse.json({ error: "Chưa đăng nhập." }, { status: 401 });
-  }
-
+export const POST = withAuth(async ({ supabase, user, req }) => {
   const formData = await req.formData().catch(() => null);
   const file = formData?.get("file");
   if (!file || !(file instanceof File)) {
-    return NextResponse.json({ error: "Thiếu file (field 'file')." }, { status: 400 });
+    throw new BadRequestError("Thiếu file (field 'file').");
   }
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "File vượt quá 25 MB." }, { status: 400 });
+    throw new BadRequestError("File vượt quá 25 MB.");
   }
 
-  const path = `${sessionData.session.user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
+  const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
     .upload(path, file, { contentType: file.type || undefined });
-  if (uploadErr) {
-    return NextResponse.json({ error: uploadErr.message }, { status: 500 });
-  }
+  if (uploadErr) throw uploadErr;
 
   // Bucket riêng tư, nên trả kèm signed URL (7 ngày) để xem trước ngay lúc tải lên.
   // `source_file_url` lưu trong DB nên lưu `path` (ổn định) — sinh lại signed URL
@@ -52,4 +43,4 @@ export async function POST(req: Request) {
     { path, previewUrl: signed?.signedUrl ?? null, name: file.name, size: file.size },
     { status: 201 }
   );
-}
+});

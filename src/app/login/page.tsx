@@ -1,7 +1,13 @@
 import { Mascot } from "@/components/ui/Mascot";
 import { Button } from "@/components/ui/Button";
 import { PasswordField } from "@/components/login/PasswordField";
-import { signIn } from "./actions";
+import { signIn, type LoginErrorCode } from "./actions";
+
+const LOGIN_ERROR_MESSAGES: Record<LoginErrorCode, string> = {
+  invalid_credentials: "Sai tên đăng nhập hoặc mật khẩu.",
+  rate_limited: "Bạn thử quá nhiều lần. Đợi một lát rồi đăng nhập lại nhé.",
+  unknown: "Không đăng nhập được. Thử lại sau ít phút nhé.",
+};
 
 export default async function LoginPage({
   searchParams,
@@ -9,6 +15,10 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const { error, next } = await searchParams;
+  // Chỉ hiển thị thông báo ứng với mã lỗi đã biết — chuỗi lạ trên URL bị bỏ qua.
+  const errorMessage = error
+    ? (LOGIN_ERROR_MESSAGES[error as LoginErrorCode] ?? LOGIN_ERROR_MESSAGES.unknown)
+    : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-5">
@@ -37,9 +47,9 @@ export default async function LoginPage({
           </div>
           <PasswordField />
 
-          {error && (
+          {errorMessage && (
             <p className="text-sm font-bold text-orange bg-orange-pale border border-orange rounded-xl px-3 py-2">
-              {error}
+              {errorMessage}
             </p>
           )}
 

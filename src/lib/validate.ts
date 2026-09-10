@@ -26,6 +26,11 @@ export class ValidationError extends Error {
  * thay vì âm thầm thành 0.
  */
 export function toCount(value: unknown, field: string): number {
+  // Chặn null/undefined/chuỗi rỗng riêng: Number(null) và Number("") đều ra 0,
+  // nên nếu chỉ dựa vào Number.isFinite thì dữ liệu thiếu sẽ âm thầm hoá 0.
+  if (value === null || value === undefined || value === "") {
+    throw new ValidationError(`${field} phải là số nguyên không âm.`);
+  }
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n) || n < 0) {
     throw new ValidationError(`${field} phải là số nguyên không âm.`);

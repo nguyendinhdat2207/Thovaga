@@ -6,6 +6,10 @@ import type { VocabWordWithProgress } from "@/lib/queries/vocab";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 
+// Phải khớp với `.flip-card { transition: transform 0.5s ... }` trong
+// globals.css — dùng để biết khi nào animation lật thẻ đã xong.
+const FLIP_DURATION_MS = 500;
+
 // Thứ tự thẻ do server trộn sẵn (getFlashcardWords), nên component không gọi
 // Math.random lúc render — không còn lệch hydration để phải vá bằng useEffect.
 export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
@@ -13,6 +17,14 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
   const queue = words;
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // Chặn thao tác trong lúc thẻ đang xoay úp lại (xem answer() bên dưới).
+  // `transitioning` (state) chỉ dùng để disable nút trên giao diện; việc CHẶN
+  // thật sự nằm ở transitioningRef — React re-render (nên nút mới thật sự bị
+  // khoá) chỉ xảy ra sau khi hàm answer() chạy xong, nên 2 lần gọi answer()
+  // dồn dập (double-tap trên điện thoại) đều đọc thấy `transitioning` là
+  // false từ closure cũ và cả hai đều lọt qua nếu chỉ dựa vào state.
+  const transitioningRef = useRef(false);
+  const [transitioning, setTransitioning] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
   const [startedAt, setStartedAt] = useState(() => new Date());
   const sessionSavedRef = useRef(false);
@@ -42,9 +54,11 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
   }, [done]);
 
   function answer(know: boolean) {
-    // Sang thẻ tiếp theo ngay, không đợi mạng: việc lưu tiến trình không ảnh
-    // hưởng tới điều người dùng nhìn thấy, mà chờ await ở đây thì mạng chậm là
-    // thẻ đứng im. Lỗi mạng cũng chỉ làm mất tiến trình lần này.
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+
+    // Lưu tiến trình ngay, không đợi mạng — việc này không ảnh hưởng tới điều
+    // người dùng nhìn thấy, mà chờ await ở đây thì mạng chậm là thẻ đứng im.
     fetch("/api/vocab/progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,9 +67,19 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
       // Không lưu được tiến trình lần này — không chặn phiên ôn tập.
     });
 
-    if (know) setKnownCount((c) => c + 1);
+    // Lật úp thẻ HIỆN TẠI trước (vẫn là từ đang xem), đợi animation lật xong
+    // rồi mới đổi sang từ tiếp theo. Trước đây đổi index cùng lúc với
+    // setFlipped(false): trong 0.5s thẻ xoay từ mặt sau về mặt trước, mặt sau
+    // đã hiển thị nghĩa của từ MỚI — nhìn như thẻ tự lật ra nghĩa của từ kế
+    // tiếp trước khi thấy mặt trước của nó.
+    setTransitioning(true);
     setFlipped(false);
-    setIndex((i) => i + 1);
+    window.setTimeout(() => {
+      if (know) setKnownCount((c) => c + 1);
+      setIndex((i) => i + 1);
+      transitioningRef.current = false;
+      setTransitioning(false);
+    }, FLIP_DURATION_MS);
   }
 
   if (done) {
@@ -87,6 +111,7 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
               setFlipped(false);
               setStartedAt(new Date());
               sessionSavedRef.current = false;
+              transitioningRef.current = false;
             }}
           >
             Ôn lại
@@ -109,7 +134,7 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
         <div
           className={`flip-card ${flipped ? "flipped" : ""}`}
           style={{ minHeight: 220 }}
-          onClick={() => setFlipped((f) => !f)}
+          onClick={() => !transitioning && setFlipped((f) => !f)}
         >
           <div className="flip-card-face front border-2 border-border rounded-2xl bg-white flex flex-col items-center justify-center text-center px-6 cursor-pointer" style={{ minHeight: 220 }}>
             <div className="font-display font-extrabold text-[28px] text-ink">{current.en}</div>
@@ -128,10 +153,10 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
 
       {flipped ? (
         <div className="flex gap-3 mt-5">
-          <Button variant="danger" className="flex-1" onClick={() => answer(false)}>
+          <Button variant="danger" className="flex-1" disabled={transitioning} onClick={() => answer(false)}>
             Chưa nhớ
           </Button>
-          <Button className="flex-1" onClick={() => answer(true)}>
+          <Button className="flex-1" disabled={transitioning} onClick={() => answer(true)}>
             Đã nhớ
           </Button>
         </div>

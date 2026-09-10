@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { getHistory } from "@/lib/queries/attempts";
-import { formatDuration, formatHours, formatScore } from "@/lib/format";
+import { formatDuration, formatHours, formatMinutesShort, formatScore } from "@/lib/format";
+import { WeekChart } from "@/components/WeekChart";
 
 export default async function HistoryPage() {
   const supabase = await createClient();
   const { attempts, stats } = await getHistory(supabase);
 
-  const maxMinutes = Math.max(1, ...stats.weeklyMinutesByDay.map((d) => d.minutes));
+  const weekMinutes = stats.weeklyMinutesByDay.reduce((sum, d) => sum + d.minutes, 0);
 
   return (
     <div className="max-w-[1160px] mx-auto px-5 py-6 pb-11">
@@ -28,25 +29,13 @@ export default async function HistoryPage() {
 
       <div className="flex flex-wrap gap-8 items-start">
         <div className="flex-1 min-w-[340px]">
-          <div className="font-display font-extrabold text-lg text-ink mb-4">7 ngày gần đây</div>
-          <div className="flex items-end gap-2.5 h-[200px] border-b border-border">
-            {stats.weeklyMinutesByDay.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5">
-                <div
-                  className="w-full bg-yellow rounded-t-md"
-                  style={{ height: `${Math.max(3, (d.minutes / maxMinutes) * 100)}%` }}
-                  title={`${d.minutes} phút`}
-                />
-              </div>
-            ))}
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-display font-extrabold text-lg text-ink">7 ngày gần đây</div>
+            <div className="font-bold text-xs text-ink-muted">
+              tổng {formatHours(weekMinutes)} · trung bình {formatMinutesShort(Math.round(weekMinutes / 7))}/ngày
+            </div>
           </div>
-          <div className="flex gap-2.5 mt-2 font-bold text-[11px] text-ink-muted text-center">
-            {stats.weeklyMinutesByDay.map((d, i) => (
-              <span key={i} className="flex-1">
-                {d.label}
-              </span>
-            ))}
-          </div>
+          <WeekChart data={stats.weeklyMinutesByDay} size="lg" />
         </div>
 
         <div className="flex-1 min-w-[280px]">

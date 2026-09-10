@@ -10,6 +10,19 @@ export function formatHours(totalMinutes: number): string {
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
+/**
+ * Số phút viết gọn để đặt trên đầu cột biểu đồ: 0 → "0", 45 → "45", 90 → "1h30".
+ *
+ * Cột chỉ rộng khoảng 40px trên điện thoại nên không đủ chỗ cho "90 phút";
+ * đổi sang giờ khi vượt 60 để chuỗi luôn ngắn mà vẫn đọc được ngay.
+ */
+export function formatMinutesShort(totalMinutes: number): string {
+  if (totalMinutes < 60) return String(totalMinutes);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
 export function formatScore(score: number): string {
   return score.toFixed(1);
 }

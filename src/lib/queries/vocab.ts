@@ -1,6 +1,64 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, VocabWord, VocabProgress } from "@/lib/database.types";
 
+export class VocabSessionError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export interface RecordVocabSessionInput {
+  mode: "flashcard" | "quiz";
+  started_at: string;
+  finished_at: string;
+  word_count: number;
+  correct_count: number;
+}
+
+// Ghi thời lượng 1 phiên học từ vựng (flashcard hoặc quiz) — server luôn tự
+// tính duration từ started_at/finished_at, không tin số giây do client gửi.
+export async function recordVocabSession(
+  supabase: SupabaseClient<Database>,
+  input: RecordVocabSessionInput
+) {
+  if (!input.mode || !input.started_at || !input.finished_at) {
+    throw new VocabSessionError("mode, started_at, finished_at là bắt buộc.");
+  }
+  const durationSeconds = Math.max(
+    0,
+    Math.round((new Date(input.finished_at).getTime() - new Date(input.started_at).getTime()) / 1000)
+  );
+
+  const { error } = await supabase.from("vocab_sessions").insert({
+    mode: input.mode,
+    started_at: input.started_at,
+    finished_at: input.finished_at,
+    duration_seconds: durationSeconds,
+    word_count: input.word_count ?? 0,
+    correct_count: input.correct_count ?? 0,
+  });
+  if (error) throw error;
+}
+
+export async function getTotalVocabMinutes(supabase: SupabaseClient<Database>): Promise<number> {
+  const { data, error } = await supabase.from("vocab_sessions").select("duration_seconds");
+  if (error) throw error;
+  const totalSeconds = (data ?? []).reduce((sum, s) => sum + s.duration_seconds, 0);
+  return Math.round(totalSeconds / 60);
+}
+
+export async function getVocabSessions(
+  supabase: SupabaseClient<Database>
+): Promise<{ duration_seconds: number; created_at: string }[]> {
+  const { data, error } = await supabase
+    .from("vocab_sessions")
+    .select("duration_seconds, created_at");
+  if (error) throw error;
+  return data ?? [];
+}
+
 const BOX_INTERVAL_DAYS: Record<number, number> = { 0: 0, 1: 1, 2: 2, 3: 4, 4: 7, 5: 15 };
 
 function todayStr(): string {

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getTotalStudiedMinutes } from "@/lib/queries/attempts";
+import { getTotalVocabMinutes } from "@/lib/queries/vocab";
 import { formatHours } from "@/lib/format";
 import { AppChrome } from "@/components/AppChrome";
 
@@ -9,7 +10,10 @@ import { AppChrome } from "@/components/AppChrome";
 // getUser() là network call thật tới Supabase Auth, gọi lặp lại chỉ tổ chậm.
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
-  const totalMinutes = await getTotalStudiedMinutes(supabase);
+  const [quizMinutes, vocabMinutes] = await Promise.all([
+    getTotalStudiedMinutes(supabase),
+    getTotalVocabMinutes(supabase),
+  ]);
 
-  return <AppChrome totalStudiedLabel={formatHours(totalMinutes)}>{children}</AppChrome>;
+  return <AppChrome totalStudiedLabel={formatHours(quizMinutes + vocabMinutes)}>{children}</AppChrome>;
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Attempt } from "@/lib/database.types";
 import { computeScore } from "@/lib/format";
+import { getVocabSessions } from "@/lib/queries/vocab";
 
 export interface SubmitAnswerInput {
   question_id: string;
@@ -214,10 +215,10 @@ export interface HistoryAttempt extends Attempt {
 export async function getHistory(
   supabase: SupabaseClient<Database>
 ): Promise<{ attempts: HistoryAttempt[]; stats: HistoryStats }> {
-  const { data: attempts, error: attemptsErr } = await supabase
-    .from("attempts")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: attempts, error: attemptsErr }, vocabSessions] = await Promise.all([
+    supabase.from("attempts").select("*").order("created_at", { ascending: false }),
+    getVocabSessions(supabase),
+  ]);
   if (attemptsErr) throw attemptsErr;
 
   const deckIds = Array.from(new Set((attempts ?? []).map((a) => a.deck_id)));
@@ -246,7 +247,12 @@ export async function getHistory(
     };
   });
 
-  const totalSeconds = enriched.reduce((sum, a) => sum + a.duration_seconds, 0);
+  // Tổng thời gian học gồm cả bộ đề trắc nghiệm lẫn phiên học từ vựng
+  // (flashcard/quiz) — 2 nguồn khác bảng nên cộng dồn theo giây rồi mới quy
+  // đổi ra phút.
+  const quizSeconds = enriched.reduce((sum, a) => sum + a.duration_seconds, 0);
+  const vocabSeconds = vocabSessions.reduce((sum, s) => sum + s.duration_seconds, 0);
+  const totalSeconds = quizSeconds + vocabSeconds;
   const averageScore = enriched.length
     ? enriched.reduce((sum, a) => sum + a.score, 0) / enriched.length
     : 0;
@@ -259,14 +265,17 @@ export async function getHistory(
     d.setHours(0, 0, 0, 0);
     const next = new Date(d);
     next.setDate(d.getDate() + 1);
-    const minutes =
-      enriched
-        .filter((a) => {
-          const t = new Date(a.created_at).getTime();
-          return t >= d.getTime() && t < next.getTime();
-        })
-        .reduce((sum, a) => sum + a.duration_seconds, 0) / 60;
-    return { label: dayLabels[d.getDay()], minutes: Math.round(minutes) };
+    const inRange = (iso: string) => {
+      const t = new Date(iso).getTime();
+      return t >= d.getTime() && t < next.getTime();
+    };
+    const quizMinutes = enriched
+      .filter((a) => inRange(a.created_at))
+      .reduce((sum, a) => sum + a.duration_seconds, 0);
+    const vocabMinutes = vocabSessions
+      .filter((s) => inRange(s.created_at))
+      .reduce((sum, s) => sum + s.duration_seconds, 0);
+    return { label: dayLabels[d.getDay()], minutes: Math.round((quizMinutes + vocabMinutes) / 60) };
   });
 
   return {

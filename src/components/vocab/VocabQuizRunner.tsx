@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VocabWordWithProgress } from "@/lib/queries/vocab";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -60,9 +60,31 @@ export function VocabQuizRunner({
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongList, setWrongList] = useState<WrongItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [startedAt] = useState(() => new Date());
+  const sessionSavedRef = useRef(false);
 
   const done = index >= queue.length;
   const current = queue[index];
+
+  // Ghi lại thời lượng phiên quiz khi hoàn thành — chỉ 1 lần mỗi phiên.
+  useEffect(() => {
+    if (!done || sessionSavedRef.current) return;
+    sessionSavedRef.current = true;
+    fetch("/api/vocab/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "quiz",
+        started_at: startedAt.toISOString(),
+        finished_at: new Date().toISOString(),
+        word_count: queue.length,
+        correct_count: correctCount,
+      }),
+    }).catch(() => {
+      // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   async function pick(opt: string) {
     if (answered || submitting) return;

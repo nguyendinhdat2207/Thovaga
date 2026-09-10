@@ -216,6 +216,30 @@ export interface Database {
           },
         ];
       };
+      vocab_sessions: {
+        Row: {
+          id: string;
+          mode: "flashcard" | "quiz";
+          started_at: string;
+          finished_at: string;
+          duration_seconds: number;
+          word_count: number;
+          correct_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          mode: "flashcard" | "quiz";
+          started_at: string;
+          finished_at: string;
+          duration_seconds: number;
+          word_count: number;
+          correct_count: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vocab_sessions"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -230,3 +254,4 @@ export type AttemptAnswer = Database["public"]["Tables"]["attempt_answers"]["Row
 export type VocabDeck = Database["public"]["Tables"]["vocab_decks"]["Row"];
 export type VocabWord = Database["public"]["Tables"]["vocab_words"]["Row"];
 export type VocabProgress = Database["public"]["Tables"]["vocab_progress"]["Row"];
+export type VocabSession = Database["public"]["Tables"]["vocab_sessions"]["Row"];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VocabWordWithProgress } from "@/lib/queries/vocab";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -29,9 +29,32 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
   const [flipped, setFlipped] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [startedAt, setStartedAt] = useState(() => new Date());
+  const sessionSavedRef = useRef(false);
 
   const done = index >= queue.length;
   const current = queue[index];
+
+  // Ghi lại thời lượng phiên ôn tập khi hoàn thành — chỉ 1 lần mỗi phiên
+  // (sessionSavedRef chặn double-post nếu component re-render).
+  useEffect(() => {
+    if (!done || sessionSavedRef.current) return;
+    sessionSavedRef.current = true;
+    fetch("/api/vocab/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "flashcard",
+        started_at: startedAt.toISOString(),
+        finished_at: new Date().toISOString(),
+        word_count: queue.length,
+        correct_count: knownCount,
+      }),
+    }).catch(() => {
+      // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   async function answer(know: boolean) {
     if (saving) return;
@@ -77,6 +100,8 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
               setIndex(0);
               setKnownCount(0);
               setFlipped(false);
+              setStartedAt(new Date());
+              sessionSavedRef.current = false;
             }}
           >
             Ôn lại

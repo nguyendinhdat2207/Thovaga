@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Attempt } from "@/lib/database.types";
 import { computeScore } from "@/lib/format";
-import { getVocabSessions } from "@/lib/queries/vocab";
+import { getTotalStudiedMinutes, getWeeklyMinutesByDay } from "@/lib/queries/stats";
 import { parseSessionWindow, ValidationError, type SessionWindow } from "@/lib/validate";
 
 export interface SubmitAnswerInput {
@@ -86,15 +86,6 @@ export async function recordAttempt(
   if (attemptErr) throw attemptErr;
 
   return attempt;
-}
-
-export async function getTotalStudiedMinutes(
-  supabase: SupabaseClient<Database>
-): Promise<number> {
-  const { data, error } = await supabase.from("attempts").select("duration_seconds");
-  if (error) throw error;
-  const totalSeconds = (data ?? []).reduce((sum, a) => sum + a.duration_seconds, 0);
-  return Math.round(totalSeconds / 60);
 }
 
 export async function getContinueDeckId(
@@ -209,14 +200,33 @@ export interface HistoryAttempt extends Attempt {
   subjectName: string;
 }
 
+/** Số lượt làm bài tối đa hiển thị trong lịch sử — bảng chỉ tăng, không giới
+ * hạn thì trang sẽ chậm dần đều. Thống kê tổng vẫn tính trên toàn bộ dữ liệu
+ * vì được cộng dồn ở Postgres. */
+export const HISTORY_PAGE_SIZE = 50;
+
 export async function getHistory(
   supabase: SupabaseClient<Database>
 ): Promise<{ attempts: HistoryAttempt[]; stats: HistoryStats }> {
-  const [{ data: attempts, error: attemptsErr }, vocabSessions] = await Promise.all([
-    supabase.from("attempts").select("*").order("created_at", { ascending: false }),
-    getVocabSessions(supabase),
+  const [
+    { data: attempts, error: attemptsErr },
+    { data: summary, error: summaryErr },
+    totalMinutes,
+    weeklyMinutesByDay,
+  ] = await Promise.all([
+    supabase
+      .from("attempts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_PAGE_SIZE),
+    // Số lượt và điểm trung bình tính trên TOÀN BỘ lịch sử, không phải chỉ
+    // trang đầu — nên lấy riêng bằng aggregate thay vì reduce() trên mảng trên.
+    supabase.rpc("attempt_summary").single(),
+    getTotalStudiedMinutes(supabase),
+    getWeeklyMinutesByDay(supabase),
   ]);
   if (attemptsErr) throw attemptsErr;
+  if (summaryErr) throw summaryErr;
 
   const deckIds = Array.from(new Set((attempts ?? []).map((a) => a.deck_id)));
   const { data: decks, error: decksErr } =
@@ -244,43 +254,12 @@ export async function getHistory(
     };
   });
 
-  // Tổng thời gian học gồm cả bộ đề trắc nghiệm lẫn phiên học từ vựng
-  // (flashcard/quiz) — 2 nguồn khác bảng nên cộng dồn theo giây rồi mới quy
-  // đổi ra phút.
-  const quizSeconds = enriched.reduce((sum, a) => sum + a.duration_seconds, 0);
-  const vocabSeconds = vocabSessions.reduce((sum, s) => sum + s.duration_seconds, 0);
-  const totalSeconds = quizSeconds + vocabSeconds;
-  const averageScore = enriched.length
-    ? enriched.reduce((sum, a) => sum + a.score, 0) / enriched.length
-    : 0;
-
-  const now = new Date();
-  const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-  const weeklyMinutesByDay = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(now.getDate() - (6 - i));
-    d.setHours(0, 0, 0, 0);
-    const next = new Date(d);
-    next.setDate(d.getDate() + 1);
-    const inRange = (iso: string) => {
-      const t = new Date(iso).getTime();
-      return t >= d.getTime() && t < next.getTime();
-    };
-    const quizMinutes = enriched
-      .filter((a) => inRange(a.created_at))
-      .reduce((sum, a) => sum + a.duration_seconds, 0);
-    const vocabMinutes = vocabSessions
-      .filter((s) => inRange(s.created_at))
-      .reduce((sum, s) => sum + s.duration_seconds, 0);
-    return { label: dayLabels[d.getDay()], minutes: Math.round((quizMinutes + vocabMinutes) / 60) };
-  });
-
   return {
     attempts: enriched,
     stats: {
-      totalMinutes: Math.round(totalSeconds / 60),
-      attemptCount: enriched.length,
-      averageScore: Math.round(averageScore * 10) / 10,
+      totalMinutes,
+      attemptCount: Number(summary?.attempt_count ?? 0),
+      averageScore: Math.round(Number(summary?.average_score ?? 0) * 10) / 10,
       weeklyMinutesByDay,
     },
   };

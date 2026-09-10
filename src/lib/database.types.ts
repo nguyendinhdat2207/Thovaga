@@ -271,6 +271,33 @@ export interface Database {
         };
         Returns: string;
       };
+      // Thống kê cộng dồn ở Postgres — xem 0008_stats_and_indexes.sql.
+      study_total_seconds: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      study_seconds_by_day: {
+        Args: { p_days: number };
+        Returns: { day: string; seconds: number }[];
+      };
+      vocab_deck_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          title: string;
+          created_at: string;
+          word_count: number;
+          due_count: number;
+        }[];
+      };
+      apply_vocab_progress: {
+        Args: { p_word_id: string; p_correct: boolean };
+        Returns: Database["public"]["Tables"]["vocab_progress"]["Row"][];
+      };
+      attempt_summary: {
+        Args: Record<string, never>;
+        Returns: { attempt_count: number; average_score: number }[];
+      };
       record_attempt: {
         Args: {
           p_deck_id: string;

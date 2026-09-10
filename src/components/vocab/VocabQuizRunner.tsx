@@ -2,31 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { VocabWordWithProgress } from "@/lib/queries/vocab";
+import type { VocabQuizItem } from "@/lib/queries/vocab";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function buildOptions(word: VocabWordWithProgress, pool: VocabWordWithProgress[]): string[] {
-  // Ưu tiên đáp án nhiễu đã soạn sẵn (khó phân biệt hơn) — chỉ random từ các
-  // từ khác trong pool khi từ này chưa có distractors soạn sẵn.
-  if (word.distractors && word.distractors.length > 0) {
-    return shuffle([word.vi, ...word.distractors]);
-  }
-  const others = pool.filter((w) => w.id !== word.id && w.vi !== word.vi);
-  const distractors = shuffle(others)
-    .slice(0, 3)
-    .map((w) => w.vi);
-  return shuffle([word.vi, ...distractors]);
-}
 
 interface WrongItem {
   en: string;
@@ -34,25 +12,12 @@ interface WrongItem {
   example: string | null;
 }
 
-export function VocabQuizRunner({
-  words,
-  pool,
-}: {
-  words: VocabWordWithProgress[];
-  pool: VocabWordWithProgress[];
-}) {
+// Câu hỏi và thứ tự lựa chọn đều do server trộn sẵn (getVocabQuizItems), nên
+// component này không còn gọi Math.random lúc render — không còn lệch hydration
+// và cũng không cần nhận cả kho từ để tự bốc đáp án nhiễu.
+export function VocabQuizRunner({ items }: { items: VocabQuizItem[] }) {
   const router = useRouter();
-  // Giữ nguyên thứ tự + đáp án rỗng lúc render server để tránh lệch hydration
-  // (buildOptions dùng Math.random), xáo trộn thật sau khi mount ở client.
-  const [queue, setQueue] = useState(words);
-  const [options, setOptions] = useState<string[]>([]);
-  useEffect(() => {
-    const shuffled = shuffle(words);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- xáo trộn client-only có chủ đích, tránh lệch hydration
-    setQueue(shuffled);
-    setOptions(buildOptions(shuffled[0], pool));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const queue = items;
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -121,14 +86,10 @@ export function VocabQuizRunner({
   }
 
   function next() {
-    const nextIndex = index + 1;
-    setIndex(nextIndex);
+    setIndex(index + 1);
     setPicked(null);
     setAnswered(false);
     setCorrectAnswer(null);
-    if (nextIndex < queue.length) {
-      setOptions(buildOptions(queue[nextIndex], pool));
-    }
   }
 
   if (done) {
@@ -192,7 +153,7 @@ export function VocabQuizRunner({
       </h2>
 
       <div className="flex flex-col gap-2.5">
-        {options.map((opt) => {
+        {current.options.map((opt) => {
           const showRight = answered && opt === correctAnswer;
           const showWrong = answered && opt === picked && opt !== correctAnswer;
           return (

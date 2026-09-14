@@ -156,6 +156,34 @@ tài khoản ở project Supabase này đều đọc/xoá được toàn bộ d�
 Muốn thêm người dùng thứ hai: `insert into app_owners (user_id) values ('<uuid>')` từ SQL
 Editor. Mặc định là không có quyền.
 
+### Khoá dữ liệu từ vựng (`0012_protect_vocab_data.sql`)
+
+Kho từ vựng là dữ liệu tốn nhiều công sức upload nhất trong app, nên có 2 lớp bảo vệ riêng khỏi
+việc bị xoá nhầm bởi một câu SQL/migration chạy tay sau này (kể cả do chính Claude chạy nhầm):
+
+1. **Trigger chặn `TRUNCATE` và `DELETE` hàng loạt** trên `vocab_decks`, `vocab_words`,
+   `vocab_progress`, `vocab_sessions`. Xoá tới 20 dòng/câu lệnh thì vẫn chạy bình thường; vượt
+   quá thì bị chặn với thông báo rõ ràng, **trừ khi** chạy trước trong cùng transaction:
+   ```sql
+   set local app.allow_destructive_vocab_ops = 'yes';
+   ```
+   Ứng dụng không có đường xoá `vocab_words`/`vocab_decks` nào cả (đã kiểm tra toàn bộ
+   `src/lib/queries/vocab.ts` và `src/app/api/vocab/*`), nên lớp này chỉ chặn thao tác SQL trực
+   tiếp — không ảnh hưởng người dùng thường.
+2. **Snapshot tự động mỗi ngày** (`pg_cron`, 19:00 UTC ≈ 2h sáng giờ VN) lưu toàn bộ
+   decks+words+progress vào bảng `vocab_backups` dưới dạng jsonb, giữ 30 bản gần nhất. Nếu lớp 1
+   bị vượt qua (kể cả chủ động mà làm sai), vẫn khôi phục được từ bản gần nhất:
+   ```sql
+   -- Xem các bản đã lưu
+   select id, taken_at, deck_count, word_count from vocab_backups order by taken_at desc;
+
+   -- Khôi phục 1 từ cụ thể từ 1 bản backup (ví dụ)
+   select w from jsonb_array_elements(
+     (select payload->'words' from vocab_backups where id = '<backup_id>')
+   ) w
+   where w->>'en' = 'run';
+   ```
+
 ## Deploy
 
 **Supabase:** giữ project đã tạo ở bước "Chạy local" — free tier đủ dùng cho 1 người dùng.

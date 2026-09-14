@@ -15,7 +15,18 @@ interface WrongItem {
 // Câu hỏi và thứ tự lựa chọn đều do server trộn sẵn (getVocabQuizItems), nên
 // component này không còn gọi Math.random lúc render — không còn lệch hydration
 // và cũng không cần nhận cả kho từ để tự bốc đáp án nhiễu.
-export function VocabQuizRunner({ items, title }: { items: VocabQuizItem[]; title?: string }) {
+export function VocabQuizRunner({
+  items,
+  title,
+  deckId = null,
+}: {
+  items: VocabQuizItem[];
+  title?: string;
+  /** Có giá trị khi phiên này học nguyên 1 bộ cụ thể — cộng vào "số lần đã
+   * học" của bộ đó. null khi trải trên nhiều bộ (vd "Quiz tất cả từ", "Từ sai
+   * tuần này"). */
+  deckId?: string | null;
+}) {
   const router = useRouter();
   const queue = items;
   const [index, setIndex] = useState(0);
@@ -44,6 +55,7 @@ export function VocabQuizRunner({ items, title }: { items: VocabQuizItem[]; titl
         finished_at: new Date().toISOString(),
         word_count: queue.length,
         correct_count: correctCount,
+        deck_id: deckId,
       }),
     }).catch(() => {
       // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.

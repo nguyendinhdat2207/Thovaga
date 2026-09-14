@@ -80,13 +80,28 @@ export default async function VocabPage() {
                   className={`w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center font-display font-extrabold text-sm ${
                     deck.dueCount > 0 ? "bg-yellow text-ink" : "bg-track text-ink-muted"
                   }`}
+                  title={
+                    deck.completedCount > 0
+                      ? `Đã hoàn thành ${deck.completedCount} lần${deck.dueCount > 0 ? ` · ${deck.dueCount} từ cần ôn hôm nay` : ""}`
+                      : deck.dueCount > 0
+                        ? `${deck.dueCount} từ cần ôn hôm nay`
+                        : "Chưa có từ nào đến hạn ôn"
+                  }
                 >
-                  {deck.dueCount > 0 ? deck.dueCount : "✓"}
+                  {/* Số trong vòng LUÔN là "đã hoàn thành mấy lần" — cộng dồn vĩnh
+                      viễn, không đổi theo lịch ôn Leitner. Trước đây số này là due
+                      count (đổi mỗi ngày) và chỉ hiện ✓ khi due = 0, nên hôm sau lịch
+                      ôn quay vòng lại là mất dấu, nhìn như hôm qua chưa học gì dù đã
+                      học xong. Màu vòng (vàng/xám) mới là thứ đổi theo due hôm nay —
+                      chỉ báo hiệu "có cần ôn không", không che mất số lần đã học. */}
+                  {deck.completedCount > 0 ? deck.completedCount : deck.dueCount > 0 ? deck.dueCount : "✓"}
                 </div>
                 <div className="min-w-0">
                   <div className="font-display font-extrabold text-[17px] text-ink">{deck.title}</div>
                   <div className="font-bold text-xs text-ink-muted">
-                    {deck.wordCount} từ{deck.dueCount > 0 ? ` · ${deck.dueCount} cần ôn` : ""}
+                    {deck.wordCount} từ
+                    {deck.dueCount > 0 && ` · ${deck.dueCount} cần ôn`}
+                    {deck.completedCount > 0 && ` · đã học ${deck.completedCount} lần`}
                   </div>
                 </div>
               </div>

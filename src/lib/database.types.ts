@@ -226,6 +226,7 @@ export interface Database {
           word_count: number;
           correct_count: number;
           created_at: string;
+          deck_id: string | null;
         };
         Insert: {
           id?: string;
@@ -236,6 +237,7 @@ export interface Database {
           word_count: number;
           correct_count: number;
           created_at?: string;
+          deck_id?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["vocab_sessions"]["Insert"]>;
         Relationships: [];
@@ -288,6 +290,7 @@ export interface Database {
           created_at: string;
           word_count: number;
           due_count: number;
+          completed_count: number;
         }[];
       };
       vocab_words_with_progress: {

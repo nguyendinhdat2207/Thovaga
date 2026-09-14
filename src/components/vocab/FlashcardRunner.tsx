@@ -12,7 +12,15 @@ const FLIP_DURATION_MS = 500;
 
 // Thứ tự thẻ do server trộn sẵn (getFlashcardWords), nên component không gọi
 // Math.random lúc render — không còn lệch hydration để phải vá bằng useEffect.
-export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
+export function FlashcardRunner({
+  words,
+  deckId,
+}: {
+  words: VocabWordWithProgress[];
+  /** Có giá trị khi phiên này học nguyên 1 bộ cụ thể — cộng vào "số lần đã
+   * học" của bộ đó. null khi trải trên nhiều bộ (vd "Ôn hôm nay"). */
+  deckId: string | null;
+}) {
   const router = useRouter();
   const queue = words;
   const [index, setIndex] = useState(0);
@@ -46,6 +54,7 @@ export function FlashcardRunner({ words }: { words: VocabWordWithProgress[] }) {
         finished_at: new Date().toISOString(),
         word_count: queue.length,
         correct_count: knownCount,
+        deck_id: deckId,
       }),
     }).catch(() => {
       // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.

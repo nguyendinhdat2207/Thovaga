@@ -37,6 +37,14 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
   sai lại thì quay lại. Sang tuần mới tự "reset" vì lọc theo tuần hiện tại, không cần dọn thủ công.
   Chỉ tính lỗi ở quiz — không tính "Chưa nhớ" ở flashcard (đó là tự đánh giá, không có đáp án đúng
   để verify).
+- **Số lần đã học mỗi bộ**: vòng tròn cạnh tên bộ ở `/vocab` hiện số lần đã hoàn thành Flashcard
+  hoặc Quiz cho riêng bộ đó — cộng dồn vĩnh viễn (`vocab_sessions.deck_id`, migration `0014`),
+  KHÔNG phụ thuộc lịch ôn Leitner. Trước đây vòng tròn chỉ hiện due count hôm nay và dấu ✓ khi
+  due = 0, nên hôm sau khi box đẩy vài từ quay lại đến hạn, dấu ✓ biến mất — nhìn như hôm qua
+  chưa học gì dù đã học xong nguyên bộ. Nay màu vòng (vàng/xám) mới đổi theo due hôm nay, còn số
+  bên trong luôn ưu tiên hiện completedCount một khi đã > 0. Chỉ tính phiên mở từ đúng 1 bộ
+  (`?deckId=...`) — "Ôn hôm nay"/"Quiz tất cả từ"/"Từ sai tuần này" trải trên nhiều bộ nên không
+  gắn vào riêng bộ nào (`deck_id = null`).
 
 ### Import bằng Markdown (dùng cho đề đã OCR sẵn)
 

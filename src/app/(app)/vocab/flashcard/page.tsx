@@ -18,5 +18,9 @@ export default async function VocabFlashcardPage({
 
   if (words.length === 0) notFound();
 
-  return <FlashcardRunner words={words} />;
+  // deckId chỉ có khi mở Flashcard từ đúng 1 bộ ở trang /vocab — truyền xuống
+  // để phiên học được cộng vào "số lần đã học" của riêng bộ đó (xem
+  // vocab_deck_stats trong migration 0014). "Ôn hôm nay" (scope=due, không
+  // deckId) trải trên nhiều bộ nên không gắn vào bộ nào.
+  return <FlashcardRunner words={words} deckId={deckId || null} />;
 }

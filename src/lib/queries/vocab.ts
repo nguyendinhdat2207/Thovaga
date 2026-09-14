@@ -17,6 +17,11 @@ export interface RecordVocabSessionInput {
   finished_at: string;
   word_count: number;
   correct_count: number;
+  /** Bộ từ cụ thể nếu phiên này học nguyên 1 bộ (mở Flashcard/Quiz từ trang
+   * /vocab). Bỏ trống khi phiên trải trên nhiều bộ ("Ôn hôm nay", "Quiz tất
+   * cả từ", "Từ sai tuần này") — những phiên đó không cộng vào riêng bộ nào,
+   * tránh làm sai lệch "số lần đã học" của từng bộ. */
+  deck_id?: string | null;
 }
 
 const VOCAB_SESSION_MODES = ["flashcard", "quiz"] as const;
@@ -45,6 +50,10 @@ export async function recordVocabSession(
     throw err;
   }
 
+  // "" hoặc kiểu khác string đều coi như không gắn bộ nào — tránh insert
+  // thẳng giá trị rác vào cột uuid rồi để lỗi cú pháp Postgres khó hiểu văng ra.
+  const deckId = typeof input.deck_id === "string" && input.deck_id.trim() ? input.deck_id.trim() : null;
+
   const { error } = await supabase.from("vocab_sessions").insert({
     mode: input.mode,
     started_at: window.startedAt,
@@ -52,6 +61,7 @@ export async function recordVocabSession(
     duration_seconds: window.durationSeconds,
     word_count: wordCount,
     correct_count: correctCount,
+    deck_id: deckId,
   });
   if (error) throw error;
 }
@@ -67,6 +77,9 @@ export interface VocabDeckWithStats {
   created_at: string;
   wordCount: number;
   dueCount: number;
+  /** Số lần đã hoàn thành 1 phiên Flashcard/Quiz cho riêng bộ này — cộng dồn
+   * vĩnh viễn, không phụ thuộc lịch ôn Leitner (khác dueCount, đổi mỗi ngày). */
+  completedCount: number;
 }
 
 // Đếm bằng 1 câu SQL group by (hàm vocab_deck_stats, migration 0008) thay vì
@@ -83,6 +96,7 @@ export async function getVocabDecks(
     created_at: row.created_at,
     wordCount: Number(row.word_count),
     dueCount: Number(row.due_count),
+    completedCount: Number(row.completed_count),
   }));
 }
 

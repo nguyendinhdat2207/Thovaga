@@ -47,5 +47,8 @@ export default async function VocabQuizPage({
 
   if (items.length < VOCAB_QUIZ_OPTION_COUNT) notFound();
 
-  return <VocabQuizRunner items={items} />;
+  // deckId chỉ có khi mở Quiz từ đúng 1 bộ — cộng vào "số lần đã học" của
+  // riêng bộ đó (xem migration 0014). "Quiz tất cả từ" / "Ôn từ đến hạn"
+  // (không deckId) trải trên nhiều bộ nên không gắn vào bộ nào.
+  return <VocabQuizRunner items={items} deckId={deckId || null} />;
 }

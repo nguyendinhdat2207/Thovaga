@@ -315,6 +315,26 @@ export interface Database {
         Args: { p_deck_id: string | null; p_due_only: boolean };
         Returns: number;
       };
+      record_weekly_mistake: {
+        Args: { p_word_id: string; p_correct: boolean };
+        Returns: undefined;
+      };
+      vocab_weekly_mistakes_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      vocab_weekly_mistakes_list: {
+        Args: Record<string, never>;
+        Returns: {
+          word_id: string;
+          en: string;
+          vi: string;
+          example: string | null;
+          distractors: string[] | null;
+          wrong_count: number;
+          last_wrong_at: string;
+        }[];
+      };
       apply_vocab_progress: {
         Args: { p_word_id: string; p_correct: boolean };
         Returns: Database["public"]["Tables"]["vocab_progress"]["Row"][];

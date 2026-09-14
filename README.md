@@ -30,6 +30,13 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
 - **Kho từ** (`/vocab/bank`): tìm kiếm + lọc theo bộ từ.
 - **Thêm từ mới** (`/vocab/import`): dán danh sách `từ | nghĩa | ví dụ`, mỗi dòng 1 từ, hoặc dùng
   chế độ "Dán Markdown" bên dưới.
+- **Từ sai tuần này** (`/vocab/quiz?scope=mistakes`): mỗi lần chọn sai ở quiz từ vựng (bất kể bộ
+  nào, làm quiz bao nhiêu lần trong ngày) đều được gom vào bảng `vocab_weekly_mistakes` (migration
+  `0013`) — tuần tính theo thứ Hai→Chủ nhật giờ Việt Nam. Trang `/vocab` hiện nút "Từ sai tuần này
+  (N)" khi N > 0, bấm vào ôn lại đúng những từ đó; làm đúng lại thì từ đó tự ra khỏi danh sách,
+  sai lại thì quay lại. Sang tuần mới tự "reset" vì lọc theo tuần hiện tại, không cần dọn thủ công.
+  Chỉ tính lỗi ở quiz — không tính "Chưa nhớ" ở flashcard (đó là tự đánh giá, không có đáp án đúng
+  để verify).
 
 ### Import bằng Markdown (dùng cho đề đã OCR sẵn)
 

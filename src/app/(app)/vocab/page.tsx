@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getVocabDecks } from "@/lib/queries/vocab";
+import { getVocabDecks, getWeeklyMistakeCount } from "@/lib/queries/vocab";
 import { LinkButton } from "@/components/ui/LinkButton";
 
 export default async function VocabPage() {
   const supabase = await createClient();
-  const decks = await getVocabDecks(supabase);
+  const [decks, weeklyMistakeCount] = await Promise.all([
+    getVocabDecks(supabase),
+    getWeeklyMistakeCount(supabase),
+  ]);
 
   const totalWords = decks.reduce((sum, d) => sum + d.wordCount, 0);
   const totalDue = decks.reduce((sum, d) => sum + d.dueCount, 0);
@@ -26,7 +29,7 @@ export default async function VocabPage() {
         </LinkButton>
       </div>
 
-      <div className="flex flex-wrap gap-3.5 mb-7">
+      <div className="flex flex-wrap gap-3.5 mb-2.5">
         <LinkButton
           href={`/vocab/flashcard?scope=due`}
           size="lg"
@@ -40,7 +43,18 @@ export default async function VocabPage() {
         <LinkButton href="/vocab/bank" variant="ghost" size="lg">
           Kho từ
         </LinkButton>
+        {weeklyMistakeCount > 0 && (
+          <LinkButton href="/vocab/quiz?scope=mistakes" variant="danger" size="lg">
+            Từ sai tuần này ({weeklyMistakeCount})
+          </LinkButton>
+        )}
       </div>
+
+      <p className="font-bold text-xs text-ink-faint mb-7">
+        {weeklyMistakeCount > 0
+          ? "Reset vào thứ Hai hàng tuần — làm đúng lại thì từ đó tự ra khỏi danh sách."
+          : "Từ nào chọn sai ở quiz sẽ tự vào “Từ sai tuần này” để ôn lại cuối tuần — hiện chưa sai từ nào."}
+      </p>
 
       <h2 className="font-display font-extrabold text-[19px] text-ink mb-3.5">
         Các bộ từ theo ngày

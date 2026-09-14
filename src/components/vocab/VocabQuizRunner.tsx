@@ -15,7 +15,7 @@ interface WrongItem {
 // Câu hỏi và thứ tự lựa chọn đều do server trộn sẵn (getVocabQuizItems), nên
 // component này không còn gọi Math.random lúc render — không còn lệch hydration
 // và cũng không cần nhận cả kho từ để tự bốc đáp án nhiễu.
-export function VocabQuizRunner({ items }: { items: VocabQuizItem[] }) {
+export function VocabQuizRunner({ items, title }: { items: VocabQuizItem[]; title?: string }) {
   const router = useRouter();
   const queue = items;
   const [index, setIndex] = useState(0);
@@ -97,7 +97,9 @@ export function VocabQuizRunner({ items }: { items: VocabQuizItem[] }) {
     return (
       <div className="max-w-[560px] mx-auto px-5 py-10">
         <div className="text-center mb-6">
-          <h2 className="font-display font-extrabold text-[22px] text-ink mb-3">Kết quả Quiz</h2>
+          <h2 className="font-display font-extrabold text-[22px] text-ink mb-3">
+            {title ? `Kết quả: ${title}` : "Kết quả Quiz"}
+          </h2>
           <div className="flex gap-4 justify-center">
             <div className="flex-1">
               <div className="font-display font-extrabold text-3xl text-yellow-shadow">{correctCount}</div>
@@ -141,6 +143,11 @@ export function VocabQuizRunner({ items }: { items: VocabQuizItem[] }) {
 
   return (
     <div className="max-w-[560px] mx-auto px-5 py-6">
+      {title && (
+        <div className="font-bold text-xs text-orange uppercase tracking-wide text-center mb-2.5">
+          {title}
+        </div>
+      )}
       <div className="mb-5">
         <ProgressBar percent={(index / queue.length) * 100} />
         <div className="font-bold text-xs text-ink-muted mt-1.5 text-center">

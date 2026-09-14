@@ -177,30 +177,29 @@ export interface VocabQuizItem {
 export const VOCAB_QUIZ_OPTION_COUNT = 4;
 
 
-/**
- * Chuẩn bị sẵn câu hỏi quiz ở server: mỗi từ kèm đúng 4 lựa chọn đã trộn.
- *
- * Trước đây trang quiz gửi thêm prop `pool` chứa TOÀN BỘ kho từ (hơn 500 từ,
- * kèm ví dụ và distractors) xuống trình duyệt chỉ để bốc ngẫu nhiên 3 nghĩa làm
- * đáp án nhiễu — payload rất nặng mà 99% dữ liệu không dùng tới. Nay việc bốc
- * nhiễu làm ở đây, client chỉ nhận đúng phần nó hiển thị.
- */
-export async function getVocabQuizItems(
-  supabase: SupabaseClient<Database>,
-  options: { deckId?: string; dueOnly?: boolean } = {}
-): Promise<VocabQuizItem[]> {
-  const words = await getVocabWords(supabase, options);
-  if (words.length === 0) return [];
+/** Tối thiểu thông tin cần để dựng 1 câu quiz — cả VocabWordWithProgress và
+ * hàng trả về từ vocab_weekly_mistakes_list() đều khớp shape này. */
+interface QuizSourceWord {
+  id: string;
+  en: string;
+  vi: string;
+  example: string | null;
+  distractors: string[] | null;
+}
 
-  // Chỉ cần cột `vi` của các từ khác để làm nhiễu — lấy riêng cho nhẹ, và lấy
-  // trên toàn kho để nhiễu không bị bó hẹp trong một bộ từ nhỏ.
-  const { data: allMeanings, error } = await supabase.from("vocab_words").select("vi");
+// Chỉ cần cột `vi` của các từ khác để làm nhiễu — lấy riêng cho nhẹ, và lấy
+// trên toàn kho để nhiễu không bị bó hẹp trong một bộ từ nhỏ.
+async function getMeaningPool(supabase: SupabaseClient<Database>): Promise<string[]> {
+  const { data, error } = await supabase.from("vocab_words").select("vi");
   if (error) throw error;
-  const meaningPool = Array.from(new Set((allMeanings ?? []).map((w) => w.vi)));
+  return Array.from(new Set((data ?? []).map((w) => w.vi)));
+}
 
-  // Trộn cả thứ tự câu hỏi ở đây luôn, để component không phải trộn lúc render
-  // (nguồn gốc của lệch hydration trước đây).
-  return shuffled(words).map((word) => {
+// Gắn 4 lựa chọn (1 đúng + 3 nhiễu, đã trộn) cho mỗi từ. Dùng chung cho quiz
+// theo bộ/đến hạn (getVocabQuizItems) và quiz ôn từ sai tuần này
+// (getWeeklyMistakeQuizItems) — cùng một cách bốc nhiễu, không lặp code.
+function attachQuizOptions(words: QuizSourceWord[], meaningPool: string[]): VocabQuizItem[] {
+  return words.map((word) => {
     // Ưu tiên đáp án nhiễu đã soạn tay (khó phân biệt hơn nhiễu ngẫu nhiên).
     const authored = word.distractors ?? [];
     const distractors =
@@ -219,6 +218,64 @@ export async function getVocabQuizItems(
       options: shuffleInPlace([word.vi, ...distractors]),
     };
   });
+}
+
+/**
+ * Chuẩn bị sẵn câu hỏi quiz ở server: mỗi từ kèm đúng 4 lựa chọn đã trộn.
+ *
+ * Trước đây trang quiz gửi thêm prop `pool` chứa TOÀN BỘ kho từ (hơn 500 từ,
+ * kèm ví dụ và distractors) xuống trình duyệt chỉ để bốc ngẫu nhiên 3 nghĩa làm
+ * đáp án nhiễu — payload rất nặng mà 99% dữ liệu không dùng tới. Nay việc bốc
+ * nhiễu làm ở đây, client chỉ nhận đúng phần nó hiển thị.
+ */
+export async function getVocabQuizItems(
+  supabase: SupabaseClient<Database>,
+  options: { deckId?: string; dueOnly?: boolean } = {}
+): Promise<VocabQuizItem[]> {
+  const words = await getVocabWords(supabase, options);
+  if (words.length === 0) return [];
+
+  const meaningPool = await getMeaningPool(supabase);
+  // Trộn thứ tự câu hỏi ở đây luôn, để component không phải trộn lúc render
+  // (nguồn gốc của lệch hydration trước đây).
+  return attachQuizOptions(shuffled(words), meaningPool);
+}
+
+/** Số từ đã làm sai trong tuần hiện tại (thứ Hai → Chủ nhật, giờ VN) và chưa
+ * làm đúng lại lần nào — dùng hiện badge ở trang /vocab. */
+export async function getWeeklyMistakeCount(supabase: SupabaseClient<Database>): Promise<number> {
+  const { data, error } = await supabase.rpc("vocab_weekly_mistakes_count");
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+/**
+ * Câu hỏi quiz dựng từ đúng những từ đã làm sai trong tuần hiện tại — "kho từ
+ * sai tuần này" người dùng yêu cầu: mỗi lần chọn sai ở quiz từ vựng (bất kể bộ
+ * nào, làm bao nhiêu lần trong ngày) đều được gom vào đây; làm đúng lại thì từ
+ * đó ra khỏi danh sách, sai lại thì quay lại. Tự "reset" khi sang tuần mới vì
+ * bộ lọc theo week_start hiện tại — không cần dọn dẹp thủ công.
+ */
+export async function getWeeklyMistakeQuizItems(
+  supabase: SupabaseClient<Database>
+): Promise<VocabQuizItem[]> {
+  const { data, error } = await supabase.rpc("vocab_weekly_mistakes_list");
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const meaningPool = await getMeaningPool(supabase);
+  // Đã sắp theo wrong_count giảm dần (từ sai nhiều lần nhất trước) từ trong
+  // SQL — không xáo trộn thứ tự câu hỏi ở đây để giữ đúng ưu tiên đó.
+  return attachQuizOptions(
+    data.map((row) => ({
+      id: row.word_id,
+      en: row.en,
+      vi: row.vi,
+      example: row.example,
+      distractors: row.distractors,
+    })),
+    meaningPool
+  );
 }
 
 export interface ImportVocabWordInput {
@@ -340,6 +397,18 @@ export async function gradeVocabQuizAnswer(
   if (!word) throw new VocabProgressError("word_id không tồn tại.", 404);
 
   const correct = picked === word.vi;
-  const progress = await applyVocabProgress(supabase, wordId, correct);
+  // Tiến trình Leitner (applyVocabProgress) và "kho từ sai tuần này"
+  // (record_weekly_mistake) là 2 việc độc lập, không cái nào phụ thuộc kết quả
+  // cái kia — chạy song song thay vì nối đuôi. Chỉ áp dụng cho quiz (không
+  // phải flashcard "Chưa nhớ" — đó là tự đánh giá, không có đáp án đúng để so).
+  const [progress, mistakeResult] = await Promise.all([
+    applyVocabProgress(supabase, wordId, correct),
+    supabase.rpc("record_weekly_mistake", { p_word_id: wordId, p_correct: correct }),
+  ]);
+  if (mistakeResult.error) {
+    // "Kho từ sai tuần này" là tính năng phụ — lỗi ở đây không nên làm hỏng
+    // việc chấm điểm chính, chỉ log lại để biết mà kiểm tra sau.
+    console.error("[vocab] không ghi được vocab_weekly_mistakes:", mistakeResult.error);
+  }
   return { correct, correctAnswer: word.vi, progress };
 }

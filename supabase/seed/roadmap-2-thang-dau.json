@@ -1,0 +1,678 @@
+[
+  {
+    "day": 1,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "Cài PostgreSQL + Docker. Rà lại CV.",
+    "tasks": [
+      "Sáng: Cài Docker Desktop – chạy PostgreSQL bằng container. Cài DBeaver hoặc pgAdmin. Nạp sample database `dvdrental`.",
+      "Chiều: Rà CV – mở BrainWatch, TCB Direction, FireBite, UniHybrid, viết ra giấy chính xác mình tự tay làm phần nào.",
+      "Tối: Làm 1 đề TOEIC chuẩn đoán đầy đủ, ghi lại điểm."
+    ],
+    "checkpoint": "Kết nối được vào database và chạy được `SELECT 1;`",
+    "done": false
+  },
+  {
+    "day": 2,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "[LS] chương 1–3 · SELECT, FROM, cột dẫn xuất",
+    "tasks": [
+      "Sáng: `[LS]` ch.1 (Background), ch.2 (Creating and Populating a Database), ch.3 (Query Primer)",
+      "Chiều: `[PDA]` ch.2 Python Language Basics – lướt nhanh phần đã biết từ JS, chú ý indentation, `None`, không có `let/const`",
+      "Tối: TOEIC – phân tích lỗi sai của đề chuẩn đoán, xác định yếu Listening hay Reading"
+    ],
+    "checkpoint": "Viết được `SELECT` có alias, cột tính toán, `DISTINCT`",
+    "done": false
+  },
+  {
+    "day": 3,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "[LS] chương 4 · WHERE, các toán tử lọc",
+    "tasks": [
+      "Sáng: `[LS]` ch.4 (Filtering) – `=`, `<>`, `IN`, `BETWEEN`, `LIKE`, `IS NULL`, `AND/OR/NOT`",
+      "Chiều: `[PDA]` ch.3 Built-in Data Structures – list, tuple, dict, set, list comprehension",
+      "Tối: TOEIC Part 5 + bắt đầu thói quen 30 từ/ngày (Anki, tự tạo deck)"
+    ],
+    "checkpoint": "Giải thích được vì sao `NULL = NULL` cho kết quả không phải TRUE",
+    "done": false
+  },
+  {
+    "day": 4,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "Linux terminal · điều hướng, quyền, pipe",
+    "tasks": [
+      "Sáng: `[LS]` làm lại toàn bộ bài tập cuối ch.3 và ch.4, không nhìn đáp án",
+      "Chiều: Linux – `cd`, `ls`, `pwd`, `mkdir`, `rm`, `cp`, `mv`, `cat`, `head`, `tail`, `grep`, `find`, `chmod`, pipe `|`, redirect `>` `>>`",
+      "Nguồn: *The Linux Command Line* (linuxcommand.org, miễn phí) phần 1–2",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Di chuyển và thao tác file hoàn toàn bằng terminal, không dùng GUI",
+    "done": false
+  },
+  {
+    "day": 5,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "[LS] chương 5 · JOIN nhiều bảng",
+    "tasks": [
+      "Sáng: `[LS]` ch.5 (Querying Multiple Tables) – INNER JOIN, join 3 bảng, self join",
+      "Chiều: `[PDA]` ch.2 phần function, scope; viết script Python đọc file CSV, xử lý, ghi ra file mới",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Viết được query JOIN 3 bảng không cần tra cú pháp",
+    "done": false
+  },
+  {
+    "day": 6,
+    "month": 1,
+    "week": 1,
+    "week_title": "SQL cơ bản, Python, Linux",
+    "memo": "[LS] chương 6 · UNION, INTERSECT, EXCEPT",
+    "tasks": [
+      "Sáng: `[LS]` ch.6 (Working with Sets) – `UNION` vs `UNION ALL`, hiểu vì sao `UNION ALL` nhanh hơn",
+      "Chiều: Bắt đầu đọc lướt `[FDE]` phần I (Foundation and Building Blocks) – chưa cần hiểu hết, chỗ để có khung",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chốt tuần: có CV đã sửa đúng thực tế; viết được query lọc + JOIN không tra tài liệu",
+    "done": false
+  },
+  {
+    "day": 7,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "[LS] chương 8 · GROUP BY, HAVING",
+    "tasks": [
+      "Sáng: `[LS]` ch.8 (Grouping and Aggregates) – `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `GROUP BY`, `HAVING`",
+      "Chiều: `[PDA]` ch.4 NumPy Basics – array, indexing, slicing, broadcasting",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Giải thích được vì sao `WHERE` lọc trước `GROUP BY` còn `HAVING` lọc sau",
+    "done": false
+  },
+  {
+    "day": 8,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "Thứ tự thực thi SQL · FROM→WHERE→GROUP BY→HAVING→SELECT→ORDER BY",
+    "tasks": [
+      "Sáng: Học kỹ thứ tự thực thi thật. Tự trả lời: vì sao không dùng được alias của `SELECT` trong `WHERE` nhưng dùng được trong `ORDER BY`?",
+      "Chiều: `[PDA]` ch.5 Getting Started with pandas – Series, DataFrame",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Vẽ được sơ đồ thứ tự thực thi từ trí nhớ",
+    "done": false
+  },
+  {
+    "day": 9,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "[LS] chương 9 · Subquery",
+    "tasks": [
+      "Sáng: `[LS]` ch.9 (Subqueries) – subquery trong `WHERE`, trong `FROM`, correlated subquery",
+      "Chiều: `[PDA]` ch.6 Data Loading – đọc/ghi CSV, JSON",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Phân biệt được subquery thường và correlated subquery, biết cái nào chậm hơn và vì sao",
+    "done": false
+  },
+  {
+    "day": 10,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "Docker · image, container, compose",
+    "tasks": [
+      "Sáng: `[LS]` ch.10 (Joins Revisited) – outer join, cross join",
+      "Chiều: Docker – image khác container, Dockerfile cơ bản, `docker-compose.yml`, volume, network",
+      "Nguồn: Docker official \"Get Started\" + kênh TechWorld with Nana",
+      "Thực hành: viết `docker-compose.yml` chạy PostgreSQL + pgAdmin cùng lúc",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Dựng được 2 service bằng một lệnh `docker compose up`",
+    "done": false
+  },
+  {
+    "day": 11,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "[LS] chương 11 + 7 · CASE WHEN, hàm xử lý chuỗi/số/ngày",
+    "tasks": [
+      "Sáng: `[LS]` ch.11 (Conditional Logic) và ch.7 (Data Generation, Manipulation, Conversion)",
+      "Chiều: `[PDA]` ch.7 Data Cleaning – xử lý missing data, đổi kiểu dữ liệu",
+      "Tối: TOEIC – làm đề full test #1"
+    ],
+    "checkpoint": "Dùng `CASE WHEN` để phân nhóm dữ liệu trong `SELECT` và trong `GROUP BY`",
+    "done": false
+  },
+  {
+    "day": 12,
+    "month": 1,
+    "week": 2,
+    "week_title": "Aggregate, subquery, Docker",
+    "memo": "Ôn tuần 2 · làm lại toàn bộ bài tập ch.8–11",
+    "tasks": [
+      "Sáng: Làm lại bài tập `[LS]` ch.8 đến ch.11, không nhìn đáp án",
+      "Chiều: `[PDA]` ch.8 Data Wrangling – merge, join, concat (đối chiếu trực tiếp với SQL JOIN)",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chốt tuần: làm cùng một phép tính bằng cả SQL lẫn Pandas, thấy được hai cách tương đương",
+    "done": false
+  },
+  {
+    "day": 13,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "[LS] chương 16 · Analytic/Window functions – phần được hỏi nhiều nhất khi phỏng vấn",
+    "tasks": [
+      "Sáng: `[LS]` ch.16 (Analytic Functions) phần đầu – khái niệm `OVER()`, `PARTITION BY`, `ORDER BY` trong window",
+      "Chiều: `[PDA]` ch.10 Data Aggregation and Group Operations",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Hiểu được window function khác `GROUP BY` ở chỗ nào (không gộp dòng)",
+    "done": false
+  },
+  {
+    "day": 14,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "ROW_NUMBER, RANK, DENSE_RANK – phân biệt ba cái",
+    "tasks": [
+      "Sáng: `[LS]` ch.16 phần ranking functions. Viết query \"top 3 mỗi nhóm\".",
+      "Chiều: Tiếp `[PDA]` ch.10 – `groupby` nâng cao, `agg`, `transform`",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Nêu được kết quả khác nhau của 3 hàm khi có giá trị trùng",
+    "done": false
+  },
+  {
+    "day": 15,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "LAG, LEAD, SUM() OVER – so sánh dòng trước/sau",
+    "tasks": [
+      "Sáng: `[LS]` ch.16 phần còn lại – `LAG`, `LEAD`, running total bằng `SUM() OVER`",
+      "Chiều: `[PDA]` ch.11 Time Series (đọc lướt) – đủ để hiểu dữ liệu theo thời gian",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Tính được \"chênh lệch so với dòng trước\" và \"tổng lũy kế\" bằng window function",
+    "done": false
+  },
+  {
+    "day": 16,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "Git · commit, branch, merge. Tạo repo project.",
+    "tasks": [
+      "Sáng: `[LS]` ch.14 (Views) và ch.15 (Metadata) – đọc nhanh",
+      "Chiều: Git – `init`, `add`, `commit`, `push`, `pull`, `branch`, `merge`, xử lý conflict",
+      "Nguồn: *Pro Git* (git-scm.com/book, miễn phí) chương 1–3",
+      "Thực hành: tạo repo GitHub cho project fraud detection, commit script đầu tiên",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có repo trên GitHub, đã push được code",
+    "done": false
+  },
+  {
+    "day": 17,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "Tải PaySim · EDA đầu tiên bằng Pandas",
+    "tasks": [
+      "Sáng: Ôn window function – viết lại 5 query từ trí nhớ",
+      "Chiều: Tải PaySim (kaggle.com/datasets/ealaxi/paysim1). EDA bằng Pandas: tỉ lệ fraud, phân bố theo `type`, thống kê `amount`",
+      "Tối: TOEIC – đề full test #2"
+    ],
+    "checkpoint": "Hiểu rõ từng cột của PaySim, biết tỉ lệ fraud là bao nhiêu",
+    "done": false
+  },
+  {
+    "day": 18,
+    "month": 1,
+    "week": 3,
+    "week_title": "Window function, Pandas nâng cao",
+    "memo": "Ôn tuần 3 · làm 10 câu DataLemur mức Easy/Medium",
+    "tasks": [
+      "Sáng: 10 câu DataLemur hoặc LeetCode Database, viết ra giấy trước khi gõ máy",
+      "Chiều: Load PaySim vào PostgreSQL bằng Python (psycopg2 hoặc SQLAlchemy)",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chốt tuần: PaySim đã nằm trong PostgreSQL, query được bằng SQL",
+    "done": false
+  },
+  {
+    "day": 19,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "[LS] chương 12 · Transaction, ACID",
+    "tasks": [
+      "Sáng: `[LS]` ch.12 (Transactions) – `COMMIT`, `ROLLBACK`, `SAVEPOINT`, khái niệm ACID",
+      "Chiều: `CREATE TABLE`, kiểu dữ liệu, constraint: `NOT NULL`, `UNIQUE`, `CHECK`, `DEFAULT`",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Giải thích được ACID bằng ví dụ chuyển tiền",
+    "done": false
+  },
+  {
+    "day": 20,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "Chuẩn hóa 1NF, 2NF, 3NF – và khi nào cố tình phá chuẩn",
+    "tasks": [
+      "Sáng: Học chuẩn hóa. Tự thiết kế schema cho một bài toán quản lý giao dịch đơn giản.",
+      "Chiều: Vẽ ERD bằng draw.io cho schema vừa thiết kế",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chỉ ra được một bảng đang vi phạm 3NF và cách tách ra",
+    "done": false
+  },
+  {
+    "day": 21,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "[LS] chương 13 · Index – khi nào giúp, khi nào làm chậm",
+    "tasks": [
+      "Sáng: `[LS]` ch.13 (Indexes and Constraints) – B-tree, index trên nhiều cột",
+      "Chiều: Thực hành trên PaySim trong PostgreSQL: đo thời gian query trước và sau khi thêm index",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có số liệu thật: query X giây trước, Y giây sau khi thêm index",
+    "done": false
+  },
+  {
+    "day": 22,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "EXPLAIN ANALYZE · đọc execution plan",
+    "tasks": [
+      "Sáng: PostgreSQL docs, mục \"Using EXPLAIN\" – đọc hết, ngắn thôi",
+      "Chiều: Chạy `EXPLAIN ANALYZE` trên các query PaySim. Nhận diện sequential scan và index scan.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Nhìn execution plan chỉ ra được query nào đang thiếu index",
+    "done": false
+  },
+  {
+    "day": 23,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "Script ETL đầu tiên · CSV – Pandas – PostgreSQL",
+    "tasks": [
+      "Sáng: Ôn – 10 câu DataLemur",
+      "Chiều: Viết script ETL hoàn chỉnh: đọc PaySim CSV – làm sạch bằng Pandas – ghi vào PostgreSQL. Push lên GitHub kèm README.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Script chạy được từ đầu đến cuối bằng một lệnh",
+    "done": false
+  },
+  {
+    "day": 24,
+    "month": 1,
+    "week": 4,
+    "week_title": "Thiết kế database, index, transaction",
+    "memo": "Chốt tháng 1 · làm case study 1 của 8 Week SQL Challenge",
+    "tasks": [
+      "Sáng: Danny's Diner (case study 1 tại 8weeksqlchallenge.com) – làm hết, không nhìn đáp án",
+      "Chiều: đọc `[FDE]` phần II, chương về Data Storage và Ingestion",
+      "Tối: TOEIC – đề full test #3"
+    ],
+    "checkpoint": "CHỐT THÁNG 1: SQL vững · Python đủ dùng · biết Docker, Git, Linux · CV đã sửa · có script ETL trên GitHub",
+    "done": false
+  },
+  {
+    "day": 25,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "Cài Oracle 21c XE + SQL Developer",
+    "tasks": [
+      "Sáng: Cài Oracle 21c XE (hoặc dùng livesql.oracle.com nếu máy yếu). Cài SQL Developer. Nạp schema HR.",
+      "Chiều: Tạo tài khoản Oracle Dev Gym (devgym.oracle.com), làm workout \"How Good Are You at PL/SQL?\" để biết mình đang ở đâu – làm sai hết cũng không sao, đây là bài đo mốc",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Kết nối được vào Oracle, query được schema HR",
+    "done": false
+  },
+  {
+    "day": 26,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "Oracle khác PostgreSQL · DUAL, ROWNUM, FETCH FIRST, NVL",
+    "tasks": [
+      "Sáng: Học các khác biệt: bảng `DUAL`, `ROWNUM` vs `FETCH FIRST`, `NVL` vs `COALESCE`, `DECODE`",
+      "Nguồn: Oracle *SQL Language Reference* (tra cứu) + Oracle Dev Gym phần SQL",
+      "Chiều: Chuyển toàn bộ query PostgreSQL tuần 1–3 sang cú pháp Oracle – cách học nhanh nhất",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Nêu được 5 khác biệt cụ thể giữa Oracle và PostgreSQL",
+    "done": false
+  },
+  {
+    "day": 27,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "Hàm ngày tháng Oracle · SYSDATE, TO_DATE, ADD_MONTHS",
+    "tasks": [
+      "Sáng: `SYSDATE`, `TO_DATE`, `TO_CHAR`, `ADD_MONTHS`, `MONTHS_BETWEEN`, `TRUNC` trên ngày",
+      "Chiều: Dev Gym – làm quiz phần SQL về date functions và conversion",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Viết được query nhóm giao dịch theo tháng bằng hàm Oracle",
+    "done": false
+  },
+  {
+    "day": 28,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "MERGE statement – nền cho SCD sau này",
+    "tasks": [
+      "Sáng: `MERGE` – cú pháp `WHEN MATCHED` / `WHEN NOT MATCHED`",
+      "Chiều: Thực hành `MERGE` trên bảng test: cập nhật dòng đã có, chèn dòng mới",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Viết được `MERGE` hoàn chỉnh và giải thích vì sao nó thay được cặp UPDATE+INSERT",
+    "done": false
+  },
+  {
+    "day": 29,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "Load 500K dòng PaySim vào Oracle",
+    "tasks": [
+      "Sáng: Ôn – Dev Gym workout phần SQL",
+      "Chiều: Load 500 nghìn dòng PaySim vào Oracle (chưa cần cả 6,3 triệu). Viết query thống kê cơ bản.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có dữ liệu thật trong Oracle, query được",
+    "done": false
+  },
+  {
+    "day": 30,
+    "month": 2,
+    "week": 5,
+    "week_title": "Oracle SQL",
+    "memo": "Ôn tuần 5 · case study 2 (Pizza Runner)",
+    "tasks": [
+      "Sáng: Pizza Runner – 8 Week SQL Challenge case study 2, phần A và B",
+      "Chiều: đọc `[FEU]` chương Language Fundamentals – cấu trúc block PL/SQL",
+      "Tối: TOEIC – đề full test #4"
+    ],
+    "checkpoint": "Chốt tuần: viết được mọi query Oracle tương đương với PostgreSQL đã học",
+    "done": false
+  },
+  {
+    "day": 31,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "[FEU] Language Fundamentals · block, biến, %TYPE, %ROWTYPE",
+    "tasks": [
+      "Sáng: `[FEU]` chương Language Fundamentals – `DECLARE` / `BEGIN` / `EXCEPTION` / `END`, khai báo biến, `%TYPE`, `%ROWTYPE`",
+      "Chiều: Gõ lại toàn bộ ví dụ trong chương vào SQL Developer, chạy thật",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Viết được anonymous block có biến, chạy ra kết quả bằng `DBMS_OUTPUT`",
+    "done": false
+  },
+  {
+    "day": 32,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "[FEU] Conditional Control + Loops · IF, CASE, các loại LOOP",
+    "tasks": [
+      "Sáng: `[FEU]` chương Conditional and Sequential Control và Iterative Processing with Loops",
+      "Chiều: Dev Gym – quiz về Loops in PL/SQL, The WHILE-LOOP Statement, Case Expressions",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Phân biệt được basic LOOP, WHILE LOOP, FOR LOOP và khi nào dùng cái nào",
+    "done": false
+  },
+  {
+    "day": 33,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "[FEU] Exception Handlers – chương quan trọng nhất về nghề",
+    "tasks": [
+      "Sáng: `[FEU]` chương Exception Handlers – đọc rất kỹ, đặc biệt phần `WHEN OTHERS` và `RAISE_APPLICATION_ERROR`",
+      "Chiều: Dev Gym – quiz về Error Management, RAISE_APPLICATION_ERROR, Exceptions Raised in Declaration Section, User-Defined Exceptions",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Giải thích được vì sao `WHEN OTHERS THEN NULL` là lỗi nghiêm trọng, kèm ví dụ hậu quả thật",
+    "done": false
+  },
+  {
+    "day": 34,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "[FEU] Data Retrieval · cursor implicit, explicit, FOR loop",
+    "tasks": [
+      "Sáng: `[FEU]` chương Data Retrieval – implicit cursor, explicit cursor, cursor FOR loop, cursor attributes (`%FOUND`, `%ROWCOUNT`)",
+      "Chiều: Dev Gym – quiz về Cursor FOR Loops, SQL in PL/SQL, Declaring REF CURSOR",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Viết được cả 3 kiểu cursor cho cùng một bài toán, biết kiểu nào gọn nhất",
+    "done": false
+  },
+  {
+    "day": 35,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "[FEU] Records và Collections (đọc lướt) – nền cho BULK COLLECT",
+    "tasks": [
+      "Sáng: `[FEU]` chương Records và Collections – đọc lướt, đủ để hiểu associative array và nested table",
+      "Chiều: Dev Gym – quiz về Collections",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Khai báo và dùng được một collection để chứa nhiều dòng dữ liệu",
+    "done": false
+  },
+  {
+    "day": 36,
+    "month": 2,
+    "week": 6,
+    "week_title": "PL/SQL nền tảng",
+    "memo": "Ôn tuần 6 · viết stored procedure đầu tiên có exception handling",
+    "tasks": [
+      "Sáng: Tự viết một procedure trên dữ liệu PaySim: nhận `account_id`, trả về tổng giao dịch, có xử lý trường hợp không tìm thấy",
+      "Chiều: `[FEU]` chương DML and Transaction Management – `COMMIT`, `ROLLBACK`, `SAVEPOINT` trong PL/SQL",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chốt tuần: procedure chạy đúng, có exception handling đầy đủ, không nuốt lỗi",
+    "done": false
+  },
+  {
+    "day": 37,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[FEU] Procedures, Functions, Parameters · IN, OUT, IN OUT",
+    "tasks": [
+      "Sáng: `[FEU]` chương Procedures, Functions, and Parameters – procedure khác function, các loại tham số",
+      "Chiều: Viết lại procedure ngày 36 thành function, so sánh hai cách",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Trả lời được \"khi nào dùng procedure, khi nào dùng function\"",
+    "done": false
+  },
+  {
+    "day": 38,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[FEU] Packages – chương MB Bank hỏi trực tiếp",
+    "tasks": [
+      "Sáng: `[FEU]` chương Packages – package specification, package body, biến package-level, overloading",
+      "Chiều: đọc thêm bài blog của Feuerstein trên blogs.oracle.com về package (loạt bài PL/SQL nhiều phần)",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Giải thích được lợi ích của package so với để procedure rời rạc",
+    "done": false
+  },
+  {
+    "day": 39,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[FEU] Optimizing PL/SQL · BULK COLLECT, FORALL, context switch",
+    "tasks": [
+      "Sáng: `[FEU]` chương Optimizing PL/SQL Performance – `BULK COLLECT`, `FORALL`, `LIMIT`",
+      "Chiều: đo benchmark thật: xử lý 100 nghìn dòng bằng loop thường, rồi bằng `BULK COLLECT`. Ghi lại chênh lệch giây.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có số liệu benchmark thật – đây là thứ để kể trong phỏng vấn",
+    "done": false
+  },
+  {
+    "day": 40,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[FEU] Triggers · mutating table error",
+    "tasks": [
+      "Sáng: `[FEU]` chương Triggers – các loại trigger, thứ tự kích hoạt, mutating table error",
+      "Chiều: Dev Gym – quiz về Transaction Processing in PL/SQL, Restrictions on use of FORALL",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Giải thích được mutating table error xảy ra khi nào và cách tránh",
+    "done": false
+  },
+  {
+    "day": 41,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[KIM] chương 1–2 · Star Schema, fact và dimension",
+    "tasks": [
+      "Sáng: `[KIM]` chương 1 (Data Warehousing, BI, and Dimensional Modeling Primer) và chương 2 (Kimball Dimensional Modeling Techniques Overview)",
+      "Chiều: Thiết kế star schema cho PaySim trên giấy: `fact_transaction` + `dim_account`, `dim_time`, `dim_type`",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có sơ đồ star schema vẽ ra, giải thích được vì sao thiết kế như vậy",
+    "done": false
+  },
+  {
+    "day": 42,
+    "month": 2,
+    "week": 7,
+    "week_title": "Package, hiệu năng, warehouse",
+    "memo": "[KIM] chương 3 + SCD Type 2 bằng MERGE",
+    "tasks": [
+      "Sáng: `[KIM]` chương 3 (Retail Sales) – ví dụ kinh điển về dimensional modeling. Học SCD Type 1, 2, 3.",
+      "Chiều: Implement SCD Type 2 cho `dim_account` bằng `MERGE` – thêm cột `valid_from`, `valid_to`, `is_current`",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Chốt tuần: SCD Type 2 chạy được, thử đổi thông tin một tài khoản và thấy dòng lịch sử được giữ lại",
+    "done": false
+  },
+  {
+    "day": 43,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "Build · staging table + load toàn bộ PaySim",
+    "tasks": [
+      "Cả ngày: Tạo staging table trong Oracle. Load toàn bộ 6,3 triệu dòng PaySim (dùng SQL*Loader hoặc external table nếu Python chậm).",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Có 6,3 triệu dòng trong Oracle",
+    "done": false
+  },
+  {
+    "day": 44,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "Build · transform staging – star schema bằng PL/SQL",
+    "tasks": [
+      "Cả ngày: Viết procedure transform từ staging sang `fact_transaction` và các dimension. Dùng `BULK COLLECT` cho phần xử lý theo lô.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Star schema đã có dữ liệu, đếm số dòng khớp với staging",
+    "done": false
+  },
+  {
+    "day": 45,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "Build · package tính aggregate",
+    "tasks": [
+      "Cả ngày: Viết package gồm các procedure/function tính: tổng giao dịch theo ngày, top tài khoản rủi ro, tỉ lệ fraud theo `type`. Có exception handling đầy đủ.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Package chạy được, gọi từng procedure ra kết quả đúng",
+    "done": false
+  },
+  {
+    "day": 46,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "Partition + index · đo trước và sau",
+    "tasks": [
+      "Sáng: Partition `fact_transaction` theo thời gian (Range partition). Học partition pruning.",
+      "Nguồn: Oracle *Database VLDB and Partitioning Guide*, chỉ đọc chương về Range partitioning",
+      "Chiều: Thêm index – B-tree cho cột lọc thường xuyên, Bitmap cho cột ít giá trị (`type`, `isFraud`). Chạy `EXPLAIN PLAN` trước và sau.",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Bảng số liệu benchmark: query X giây trước, Y giây sau khi partition + index",
+    "done": false
+  },
+  {
+    "day": 47,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "Viết README + đẩy toàn bộ lên GitHub",
+    "tasks": [
+      "Sáng: Viết README: mô tả bài toán, kiến trúc, sơ đồ star schema, cách chạy, bảng số liệu benchmark, hạn chế hiện tại",
+      "Chiều: Dọn code, commit theo từng phần rõ ràng, push lên GitHub",
+      "Tối: TOEIC"
+    ],
+    "checkpoint": "Repo GitHub nhìn vào là hiểu được project làm gì",
+    "done": false
+  },
+  {
+    "day": 48,
+    "month": 2,
+    "week": 8,
+    "week_title": "Tuần build – Batch Layer",
+    "memo": "CHỐT THÁNG 2 · cập nhật CV và rải hồ sơ đợt 1",
+    "tasks": [
+      "Sáng: Làm lại Dev Gym workout \"How Good Are You at PL/SQL?\" – so sánh với kết quả ngày 25 để thấy mình tiến bao xa",
+      "Chiều: Cập nhật CV với project mới. Nộp hồ sơ đợt 1: MB Bank, Techcombank, VPBank và các vị trí fresher/intern thiên về SQL/Oracle.",
+      "Tối: TOEIC – đề full test #5"
+    ],
+    "checkpoint": "CHỐT THÁNG 2: batch layer chạy từ CSV đến báo cáo · package PL/SQL tự viết · có số liệu benchmark thật · CV cập nhật · đã nộp hồ sơ",
+    "done": false
+  }
+]

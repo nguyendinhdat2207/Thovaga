@@ -9,6 +9,7 @@ import { signOut } from "@/app/login/actions";
 const NAV_ITEMS = [
   { href: "/", label: "Học", match: (p: string) => p === "/" || p.startsWith("/subjects") || p.startsWith("/quiz") },
   { href: "/vocab", label: "Từ vựng", match: (p: string) => p.startsWith("/vocab") },
+  { href: "/roadmap", label: "Lộ trình", match: (p: string) => p.startsWith("/roadmap") },
   { href: "/history", label: "Lịch sử", match: (p: string) => p.startsWith("/history") },
   { href: "/upload", label: "Tài liệu", match: (p: string) => p.startsWith("/upload") },
 ];
@@ -81,7 +82,7 @@ export function AppChrome({
 
       {!hideChrome && (
         <nav
-          className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-4 pt-2 px-1.5"
+          className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-5 pt-2 px-1.5"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
           {NAV_ITEMS.map((item) => {

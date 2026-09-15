@@ -242,6 +242,48 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["vocab_sessions"]["Insert"]>;
         Relationships: [];
       };
+      roadmap_days: {
+        Row: {
+          day: number;
+          month: number;
+          week: number;
+          week_title: string;
+          memo: string;
+          tasks: string[];
+          checkpoint: string;
+        };
+        Insert: {
+          day: number;
+          month: number;
+          week: number;
+          week_title: string;
+          memo: string;
+          tasks: string[];
+          checkpoint: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["roadmap_days"]["Insert"]>;
+        Relationships: [];
+      };
+      roadmap_progress: {
+        Row: {
+          user_id: string;
+          day: number;
+          completed: boolean;
+          completed_at: string | null;
+          note: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          day: number;
+          completed?: boolean;
+          completed_at?: string | null;
+          note?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["roadmap_progress"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     // Hàm Postgres gọi qua supabase.rpc() — xem supabase/migrations/0006_atomic_writes.sql.
@@ -375,3 +417,5 @@ export type VocabDeck = Database["public"]["Tables"]["vocab_decks"]["Row"];
 export type VocabWord = Database["public"]["Tables"]["vocab_words"]["Row"];
 export type VocabProgress = Database["public"]["Tables"]["vocab_progress"]["Row"];
 export type VocabSession = Database["public"]["Tables"]["vocab_sessions"]["Row"];
+export type RoadmapDay = Database["public"]["Tables"]["roadmap_days"]["Row"];
+export type RoadmapProgress = Database["public"]["Tables"]["roadmap_progress"]["Row"];

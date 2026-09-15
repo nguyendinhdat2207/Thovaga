@@ -46,6 +46,24 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
   (`?deckId=...`) — "Ôn hôm nay"/"Quiz tất cả từ"/"Từ sai tuần này" trải trên nhiều bộ nên không
   gắn vào riêng bộ nào (`deck_id = null`).
 
+### Lộ trình 2 tháng đầu (`/roadmap`)
+
+Checklist 48 ngày (8 tuần × 6 ngày, nghỉ Chủ nhật, chia Tháng 1/Tháng 2) hiển thị kiểu đường
+zigzag Duolingo, tái dùng design token sẵn có (không tạo design system mới). Schema tách 2 bảng
+(migration `0015`):
+
+- `roadmap_days` — nội dung tĩnh (memo, tasks, checkpoint mỗi ngày), chỉ đọc qua RLS, seed 1 lần
+  từ `supabase/seed/roadmap-2-thang-dau.json`.
+- `roadmap_progress` — tiến trình tick, **tách theo `user_id`** (khác các bảng khác trong app vốn
+  dùng chung 1 bộ dữ liệu qua `is_app_owner()`) — nếu sau này có người dùng thứ hai, mỗi người cần
+  tiến trình riêng. RLS bắt cả `user_id = auth.uid()` lẫn `is_app_owner()`.
+
+Không khoá tuyến tính — người dùng tick được ngày bất kỳ (học bù). "Ngày hiện tại" (viền vàng)
+tính bằng **ngày lớn nhất đã tick + 1** (không phải "ngày trống đầu tiên" — nếu dùng cách đó,
+theo định nghĩa sẽ không bao giờ có ngày nhỏ hơn nó còn trống, nên trạng thái "đã qua lượt nhưng
+chưa tick" — viền cam, cần học bù — sẽ không bao giờ xảy ra được). Tick/bỏ tick ghi thẳng vào
+`roadmap_progress` qua `POST /api/roadmap/progress`, cập nhật giao diện lạc quan (không đợi mạng).
+
 ### Import bằng Markdown (dùng cho đề đã OCR sẵn)
 
 Cả `/upload` (trắc nghiệm) và `/vocab/import` (từ vựng) đều có nút **"Dán Markdown"** bên cạnh chế

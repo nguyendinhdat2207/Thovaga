@@ -267,31 +267,49 @@ export async function getVocabQuizItems(
   return attachQuizOptions(shuffled(words), meaningPool);
 }
 
-/** Số từ đã làm sai trong tuần hiện tại (thứ Hai → Chủ nhật, giờ VN) và chưa
- * làm đúng lại lần nào — dùng hiện badge ở trang /vocab. */
-export async function getWeeklyMistakeCount(supabase: SupabaseClient<Database>): Promise<number> {
-  const { data, error } = await supabase.rpc("vocab_weekly_mistakes_count");
+/**
+ * "Kho từ sai" — mỗi lần chọn sai ở quiz từ vựng (bất kể bộ nào) đều thêm
+ * MỘT DÒNG MỚI, không gộp theo từ và không reset theo thời gian (khác thiết
+ * kế cũ "Từ sai tuần này"): sai "run" 3 lần thì kho có 3 dòng "run", không
+ * phải 1 dòng đếm số lần. Các dòng được xếp tuần tự thành từng gói đúng 50
+ * dòng — xem record_mistake_entry() trong migration 0016.
+ */
+export interface VocabMistakePack {
+  packNumber: number;
+  entryCount: number;
+}
+
+export const VOCAB_MISTAKE_PACK_SIZE = 50;
+
+export async function getMistakePacks(
+  supabase: SupabaseClient<Database>
+): Promise<VocabMistakePack[]> {
+  const { data, error } = await supabase.rpc("vocab_mistake_pack_summary");
   if (error) throw error;
-  return Number(data ?? 0);
+  return (data ?? []).map((row) => ({
+    packNumber: Number(row.pack_number),
+    entryCount: Number(row.entry_count),
+  }));
 }
 
 /**
- * Câu hỏi quiz dựng từ đúng những từ đã làm sai trong tuần hiện tại — "kho từ
- * sai tuần này" người dùng yêu cầu: mỗi lần chọn sai ở quiz từ vựng (bất kể bộ
- * nào, làm bao nhiêu lần trong ngày) đều được gom vào đây; làm đúng lại thì từ
- * đó ra khỏi danh sách, sai lại thì quay lại. Tự "reset" khi sang tuần mới vì
- * bộ lọc theo week_start hiện tại — không cần dọn dẹp thủ công.
+ * Câu hỏi quiz dựng từ đúng các dòng trong 1 gói cụ thể — GIỮ NGUYÊN dòng
+ * trùng (cùng 1 từ có thể xuất hiện nhiều lần nếu đã sai nhiều lần), vì gói
+ * chỉ được coi là "xong" khi làm đúng toàn bộ SỐ DÒNG, không phải số từ khác
+ * nhau. Không xáo trộn thứ tự câu ở đây (giữ theo lúc sai để dễ đối chiếu);
+ * thứ tự lựa chọn trong mỗi câu vẫn được trộn như quiz thường.
  */
-export async function getWeeklyMistakeQuizItems(
-  supabase: SupabaseClient<Database>
+export async function getMistakePackQuizItems(
+  supabase: SupabaseClient<Database>,
+  packNumber: number
 ): Promise<VocabQuizItem[]> {
-  const { data, error } = await supabase.rpc("vocab_weekly_mistakes_list");
+  const { data, error } = await supabase.rpc("vocab_mistake_pack_words", {
+    p_pack_number: packNumber,
+  });
   if (error) throw error;
   if (!data || data.length === 0) return [];
 
   const meaningPool = await getMeaningPool(supabase);
-  // Đã sắp theo wrong_count giảm dần (từ sai nhiều lần nhất trước) từ trong
-  // SQL — không xáo trộn thứ tự câu hỏi ở đây để giữ đúng ưu tiên đó.
   return attachQuizOptions(
     data.map((row) => ({
       id: row.word_id,
@@ -302,6 +320,31 @@ export async function getWeeklyMistakeQuizItems(
     })),
     meaningPool
   );
+}
+
+export class MistakePackError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// Xoá nguyên 1 gói — CHỈ được gọi sau khi người dùng ôn đúng 100% cả gói
+// trong 1 lượt (kiểm tra ở VocabQuizRunner/trang quiz, không có nút xoá tay
+// nào trong UI). Không xác nhận lại "đã đúng hết chưa" ở đây — app 1 người
+// dùng, tin vào luồng gọi duy nhất từ chính app.
+export async function clearMistakePack(
+  supabase: SupabaseClient<Database>,
+  packNumber: number
+): Promise<void> {
+  if (!Number.isInteger(packNumber) || packNumber < 1) {
+    throw new MistakePackError("packNumber phải là số nguyên dương.");
+  }
+  const { error } = await supabase.rpc("clear_vocab_mistake_pack", {
+    p_pack_number: packNumber,
+  });
+  if (error) throw error;
 }
 
 export interface ImportVocabWordInput {
@@ -423,18 +466,22 @@ export async function gradeVocabQuizAnswer(
   if (!word) throw new VocabProgressError("word_id không tồn tại.", 404);
 
   const correct = picked === word.vi;
-  // Tiến trình Leitner (applyVocabProgress) và "kho từ sai tuần này"
-  // (record_weekly_mistake) là 2 việc độc lập, không cái nào phụ thuộc kết quả
-  // cái kia — chạy song song thay vì nối đuôi. Chỉ áp dụng cho quiz (không
-  // phải flashcard "Chưa nhớ" — đó là tự đánh giá, không có đáp án đúng để so).
+  // Tiến trình Leitner (applyVocabProgress) và "kho từ sai" (record_mistake_
+  // entry) là 2 việc độc lập — chạy song song thay vì nối đuôi. Kho từ sai
+  // chỉ ghi khi SAI (không có khái niệm "đúng thì gỡ khỏi kho" nữa — kho chỉ
+  // vơi đi khi làm đúng 100% cả gói, xem clearMistakePack). Chỉ áp dụng cho
+  // quiz (không phải flashcard "Chưa nhớ" — đó là tự đánh giá, không có đáp
+  // án đúng để so).
   const [progress, mistakeResult] = await Promise.all([
     applyVocabProgress(supabase, wordId, correct),
-    supabase.rpc("record_weekly_mistake", { p_word_id: wordId, p_correct: correct }),
+    correct
+      ? Promise.resolve({ error: null })
+      : supabase.rpc("record_mistake_entry", { p_word_id: wordId }),
   ]);
   if (mistakeResult.error) {
-    // "Kho từ sai tuần này" là tính năng phụ — lỗi ở đây không nên làm hỏng
-    // việc chấm điểm chính, chỉ log lại để biết mà kiểm tra sau.
-    console.error("[vocab] không ghi được vocab_weekly_mistakes:", mistakeResult.error);
+    // Kho từ sai là tính năng phụ — lỗi ở đây không nên làm hỏng việc chấm
+    // điểm chính, chỉ log lại để biết mà kiểm tra sau.
+    console.error("[vocab] không ghi được vocab_mistake_entries:", mistakeResult.error);
   }
   return { correct, correctAnswer: word.vi, progress };
 }

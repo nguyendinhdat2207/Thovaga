@@ -19,13 +19,19 @@ export function VocabQuizRunner({
   items,
   title,
   deckId = null,
+  mistakePackNumber,
 }: {
   items: VocabQuizItem[];
   title?: string;
   /** Có giá trị khi phiên này học nguyên 1 bộ cụ thể — cộng vào "số lần đã
-   * học" của bộ đó. null khi trải trên nhiều bộ (vd "Quiz tất cả từ", "Từ sai
-   * tuần này"). */
+   * học" của bộ đó. null khi trải trên nhiều bộ (vd "Quiz tất cả từ", "Ôn gói
+   * từ sai"). */
   deckId?: string | null;
+  /** Có giá trị khi đây là phiên ôn 1 gói trong "kho từ sai" — làm đúng 100%
+   * (không sai câu nào trong `items`, kể cả dòng trùng từ) thì gói này bị xoá
+   * hẳn khỏi kho; sai dù chỉ 1 câu thì gói vẫn còn nguyên (không có cách xoá
+   * tay). Xem clear_vocab_mistake_pack trong migration 0016. */
+  mistakePackNumber?: number;
 }) {
   const router = useRouter();
   const queue = items;
@@ -38,6 +44,9 @@ export function VocabQuizRunner({
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => new Date());
   const sessionSavedRef = useRef(false);
+  const packClearRef = useRef(false);
+  const [packCleared, setPackCleared] = useState(false);
+  const [packClearError, setPackClearError] = useState(false);
 
   const done = index >= queue.length;
   const current = queue[index];
@@ -60,6 +69,26 @@ export function VocabQuizRunner({
     }).catch(() => {
       // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  // Ôn gói từ sai: đúng 100% (không câu nào sai, kể cả dòng trùng từ) thì xoá
+  // hẳn gói này khỏi kho — đây là NƠI DUY NHẤT trong app gọi xoá gói, không có
+  // nút xoá tay nào khác.
+  useEffect(() => {
+    if (!done || mistakePackNumber == null || packClearRef.current) return;
+    if (wrongList.length > 0) return; // sai dù 1 câu cũng không xoá
+    packClearRef.current = true;
+    fetch("/api/vocab/mistakes/clear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack_number: mistakePackNumber }),
+    })
+      .then((res) => {
+        if (res.ok) setPackCleared(true);
+        else setPackClearError(true);
+      })
+      .catch(() => setPackClearError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
@@ -126,6 +155,31 @@ export function VocabQuizRunner({
               <div className="font-bold text-xs text-ink-muted mt-1">Tỉ lệ</div>
             </div>
           </div>
+          {mistakePackNumber != null && (
+            <div
+              className={`mt-4 mx-auto max-w-[420px] border rounded-2xl px-4 py-3 text-left ${
+                wrongList.length === 0
+                  ? "bg-green-pale border-[#BFE8CC]"
+                  : "bg-orange-pale border-[#FFD0C4]"
+              }`}
+            >
+              {wrongList.length === 0 ? (
+                <p className="font-bold text-sm text-green-shadow">
+                  {packCleared
+                    ? `🎉 Đúng 100% — đã xoá Gói ${mistakePackNumber} khỏi kho từ sai.`
+                    : packClearError
+                      ? `Đúng 100% nhưng chưa xoá được gói do lỗi mạng — thử vào lại "Kho từ sai" ở trang /vocab, nếu gói vẫn còn thì ôn lại.`
+                      : "Đúng 100% — đang xoá gói khỏi kho từ sai..."}
+                </p>
+              ) : (
+                <p className="font-bold text-sm text-ink">
+                  Sai {wrongList.length} câu — Gói {mistakePackNumber} vẫn còn nguyên, chỉ xoá
+                  được khi ôn đúng hết cả gói trong 1 lượt.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 justify-center mt-6">
             <Button variant="ghost" onClick={() => router.push("/vocab")}>
               Về trang từ vựng

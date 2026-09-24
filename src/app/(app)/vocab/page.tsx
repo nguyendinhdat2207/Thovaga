@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getVocabDecks, getWeeklyMistakeCount, DAILY_REVIEW_LIMIT } from "@/lib/queries/vocab";
+import {
+  getVocabDecks,
+  getMistakePacks,
+  DAILY_REVIEW_LIMIT,
+  VOCAB_MISTAKE_PACK_SIZE,
+} from "@/lib/queries/vocab";
 import { LinkButton } from "@/components/ui/LinkButton";
 
 export default async function VocabPage() {
   const supabase = await createClient();
-  const [decks, weeklyMistakeCount] = await Promise.all([
+  const [decks, mistakePacks] = await Promise.all([
     getVocabDecks(supabase),
-    getWeeklyMistakeCount(supabase),
+    getMistakePacks(supabase),
   ]);
+  const totalMistakes = mistakePacks.reduce((sum, p) => sum + p.entryCount, 0);
 
   const totalWords = decks.reduce((sum, d) => sum + d.wordCount, 0);
   const totalDue = decks.reduce((sum, d) => sum + d.dueCount, 0);
@@ -48,24 +54,73 @@ export default async function VocabPage() {
         <LinkButton href="/vocab/bank" variant="ghost" size="lg">
           Kho từ
         </LinkButton>
-        {weeklyMistakeCount > 0 && (
-          <LinkButton href="/vocab/quiz?scope=mistakes" variant="danger" size="lg">
-            Từ sai tuần này ({weeklyMistakeCount})
-          </LinkButton>
-        )}
       </div>
 
       {totalDue > DAILY_REVIEW_LIMIT && (
-        <p className="font-bold text-xs text-ink-faint mb-1">
+        <p className="font-bold text-xs text-ink-faint mb-7">
           Còn {totalDue} từ đến hạn — mỗi ngày chỉ ôn tối đa {DAILY_REVIEW_LIMIT} từ, phần còn lại
           tự xoay sang các ngày sau.
         </p>
       )}
-      <p className="font-bold text-xs text-ink-faint mb-7">
-        {weeklyMistakeCount > 0
-          ? "Reset vào thứ Hai hàng tuần — làm đúng lại thì từ đó tự ra khỏi danh sách."
-          : "Từ nào chọn sai ở quiz sẽ tự vào “Từ sai tuần này” để ôn lại cuối tuần — hiện chưa sai từ nào."}
-      </p>
+
+      <div className="mb-9">
+        <div className="flex items-baseline gap-2.5 mb-1">
+          <h2 className="font-display font-extrabold text-[19px] text-ink">Kho từ sai</h2>
+          {totalMistakes > 0 && (
+            <span className="font-bold text-xs text-ink-muted">{totalMistakes} từ</span>
+          )}
+        </div>
+        <p className="font-bold text-xs text-ink-faint mb-3.5">
+          Mỗi lần chọn sai ở quiz đều được thêm vào đây, kể cả trùng từ — gộp thành gói
+          {" "}{VOCAB_MISTAKE_PACK_SIZE} từ/gói. Một gói chỉ biến mất khi ôn ĐÚNG HẾT cả gói trong
+          1 lượt, không có cách xoá tay.
+        </p>
+
+        {mistakePacks.length === 0 ? (
+          <p className="font-bold text-sm text-ink-muted border border-dashed border-border-dashed rounded-2xl p-5 text-center">
+            Chưa có từ nào trong kho từ sai — cứ làm quiz bình thường, từ nào chọn sai sẽ tự vào
+            đây.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {mistakePacks.map((pack) => {
+              const isFull = pack.entryCount >= VOCAB_MISTAKE_PACK_SIZE;
+              return (
+                <div
+                  key={pack.packNumber}
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-3.5 py-3.5 px-1 border-b border-border"
+                >
+                  <div className="flex items-center gap-3.5 sm:flex-1 min-w-0">
+                    <div
+                      className={`w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center font-display font-extrabold text-sm ${
+                        isFull ? "bg-orange text-white" : "bg-yellow text-ink"
+                      }`}
+                    >
+                      {pack.entryCount}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-display font-extrabold text-[17px] text-ink">
+                        Gói {pack.packNumber}
+                      </div>
+                      <div className="font-bold text-xs text-ink-muted">
+                        {pack.entryCount}/{VOCAB_MISTAKE_PACK_SIZE} từ
+                        {isFull ? " · đã đầy" : " · đang gom"}
+                      </div>
+                    </div>
+                  </div>
+                  <LinkButton
+                    href={`/vocab/quiz?scope=mistake-pack&pack=${pack.packNumber}`}
+                    variant="danger"
+                    size="sm"
+                  >
+                    Ôn gói này
+                  </LinkButton>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <h2 className="font-display font-extrabold text-[19px] text-ink mb-3.5">
         Các bộ từ theo ngày

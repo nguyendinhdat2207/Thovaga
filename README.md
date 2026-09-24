@@ -35,20 +35,24 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
 - **Kho từ** (`/vocab/bank`): tìm kiếm + lọc theo bộ từ.
 - **Thêm từ mới** (`/vocab/import`): dán danh sách `từ | nghĩa | ví dụ`, mỗi dòng 1 từ, hoặc dùng
   chế độ "Dán Markdown" bên dưới.
-- **Từ sai tuần này** (`/vocab/quiz?scope=mistakes`): mỗi lần chọn sai ở quiz từ vựng (bất kể bộ
-  nào, làm quiz bao nhiêu lần trong ngày) đều được gom vào bảng `vocab_weekly_mistakes` (migration
-  `0013`) — tuần tính theo thứ Hai→Chủ nhật giờ Việt Nam. Trang `/vocab` hiện nút "Từ sai tuần này
-  (N)" khi N > 0, bấm vào ôn lại đúng những từ đó; làm đúng lại thì từ đó tự ra khỏi danh sách,
-  sai lại thì quay lại. Sang tuần mới tự "reset" vì lọc theo tuần hiện tại, không cần dọn thủ công.
-  Chỉ tính lỗi ở quiz — không tính "Chưa nhớ" ở flashcard (đó là tự đánh giá, không có đáp án đúng
-  để verify).
+- **Kho từ sai** (`/vocab/quiz?scope=mistake-pack&pack=N`): mỗi lần chọn sai ở quiz từ vựng (bất
+  kể bộ nào) đều thêm MỘT DÒNG MỚI vào `vocab_mistake_entries` (migration `0016`) — không gộp theo
+  từ (sai "run" 3 lần = 3 dòng, không phải 1 dòng đếm 3), không reset theo thời gian. Các dòng
+  được xếp tuần tự thành từng gói đúng `VOCAB_MISTAKE_PACK_SIZE` = 50 dòng/gói — gói hiện tại đầy
+  50 mới mở gói kế tiếp (`record_mistake_entry()`, khoá bằng advisory lock để tránh race). Trang
+  `/vocab` liệt kê tất cả gói đang có, bấm "Ôn gói này" để ôn — gói **chỉ bị xoá khi ôn ĐÚNG 100%
+  cả gói trong 1 lượt** (kể cả các dòng trùng từ phải đúng hết), không có nút xoá tay nào trong UI
+  (`VocabQuizRunner` tự gọi `POST /api/vocab/mistakes/clear` khi `done && wrongList.length === 0`).
+  Sai dù chỉ 1 câu thì gói giữ nguyên, và câu sai đó lại tiếp tục thêm dòng mới (có thể vào 1 gói
+  khác nếu gói đang ôn đã đầy). Chỉ tính lỗi ở quiz — không tính "Chưa nhớ" ở flashcard (đó là tự
+  đánh giá, không có đáp án đúng để verify).
 - **Số lần đã học mỗi bộ**: vòng tròn cạnh tên bộ ở `/vocab` hiện số lần đã hoàn thành Flashcard
   hoặc Quiz cho riêng bộ đó — cộng dồn vĩnh viễn (`vocab_sessions.deck_id`, migration `0014`),
   KHÔNG phụ thuộc lịch ôn Leitner. Trước đây vòng tròn chỉ hiện due count hôm nay và dấu ✓ khi
   due = 0, nên hôm sau khi box đẩy vài từ quay lại đến hạn, dấu ✓ biến mất — nhìn như hôm qua
   chưa học gì dù đã học xong nguyên bộ. Nay màu vòng (vàng/xám) mới đổi theo due hôm nay, còn số
   bên trong luôn ưu tiên hiện completedCount một khi đã > 0. Chỉ tính phiên mở từ đúng 1 bộ
-  (`?deckId=...`) — "Ôn hôm nay"/"Quiz tất cả từ"/"Từ sai tuần này" trải trên nhiều bộ nên không
+  (`?deckId=...`) — "Ôn hôm nay"/"Quiz tất cả từ"/"Ôn gói từ sai" trải trên nhiều bộ nên không
   gắn vào riêng bộ nào (`deck_id = null`).
 
 ### Lộ trình 2 tháng đầu (`/roadmap`)

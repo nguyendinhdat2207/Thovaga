@@ -360,25 +360,28 @@ export interface Database {
         Args: { p_deck_id: string | null; p_due_only: boolean };
         Returns: number;
       };
-      record_weekly_mistake: {
-        Args: { p_word_id: string; p_correct: boolean };
-        Returns: undefined;
-      };
-      vocab_weekly_mistakes_count: {
-        Args: Record<string, never>;
+      record_mistake_entry: {
+        Args: { p_word_id: string };
         Returns: number;
       };
-      vocab_weekly_mistakes_list: {
+      vocab_mistake_pack_summary: {
         Args: Record<string, never>;
+        Returns: { pack_number: number; entry_count: number }[];
+      };
+      vocab_mistake_pack_words: {
+        Args: { p_pack_number: number };
         Returns: {
+          entry_id: string;
           word_id: string;
           en: string;
           vi: string;
           example: string | null;
           distractors: string[] | null;
-          wrong_count: number;
-          last_wrong_at: string;
         }[];
+      };
+      clear_vocab_mistake_pack: {
+        Args: { p_pack_number: number };
+        Returns: undefined;
       };
       apply_vocab_progress: {
         Args: { p_word_id: string; p_correct: boolean };

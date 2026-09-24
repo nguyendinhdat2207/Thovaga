@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFlashcardWords } from "@/lib/queries/vocab";
+import { getFlashcardWords, DAILY_REVIEW_LIMIT } from "@/lib/queries/vocab";
 import { FlashcardRunner } from "@/components/vocab/FlashcardRunner";
 
 export default async function VocabFlashcardPage({
@@ -10,10 +10,14 @@ export default async function VocabFlashcardPage({
 }) {
   const { scope, deckId } = await searchParams;
   const supabase = await createClient();
+  const isDaily = scope === "due" && !deckId;
 
   const words = await getFlashcardWords(supabase, {
     deckId: deckId || undefined,
     dueOnly: scope === "due",
+    // Chỉ giới hạn khi ôn toàn kho ("Ôn hôm nay", không gắn 1 bộ cụ thể) —
+    // ôn theo đúng 1 bộ (deckId) thì vẫn lấy hết vì mỗi bộ vốn chỉ vài chục từ.
+    limit: isDaily ? DAILY_REVIEW_LIMIT : undefined,
   });
 
   if (words.length === 0) notFound();

@@ -165,6 +165,18 @@ export async function getVocabWords(
 }
 
 /**
+ * Số từ tối đa cho 1 phiên "Ôn hôm nay" (đến hạn, trải toàn bộ kho — không
+ * giới hạn theo 1 bộ cụ thể). Kho từ chỉ tăng dần theo thời gian nhập, có lúc
+ * đến hạn cùng lúc hàng nghìn từ — ôn hết trong 1 phiên là phi thực tế.
+ *
+ * Không cần đổi cách sắp xếp (vẫn `order by en`) để bù lại: mỗi từ ôn xong có
+ * `next_review` mới (ngày mai trở đi), nên hôm sau chúng tự rớt khỏi danh sách
+ * "đến hạn", nhường chỗ cho 100 từ tiếp theo trong kho — xoay vòng tự nhiên
+ * qua nhiều ngày, không cần logic ưu tiên phức tạp.
+ */
+export const DAILY_REVIEW_LIMIT = 100;
+
+/**
  * Danh sách từ cho phiên flashcard, đã trộn sẵn thứ tự ở server.
  *
  * Trộn ở server để component không gọi Math.random lúc render — trước đây phải
@@ -173,7 +185,7 @@ export async function getVocabWords(
  */
 export async function getFlashcardWords(
   supabase: SupabaseClient<Database>,
-  options: { deckId?: string; dueOnly?: boolean } = {}
+  options: { deckId?: string; dueOnly?: boolean; limit?: number } = {}
 ): Promise<VocabWordWithProgress[]> {
   return shuffled(await getVocabWords(supabase, options));
 }
@@ -244,7 +256,7 @@ function attachQuizOptions(words: QuizSourceWord[], meaningPool: string[]): Voca
  */
 export async function getVocabQuizItems(
   supabase: SupabaseClient<Database>,
-  options: { deckId?: string; dueOnly?: boolean } = {}
+  options: { deckId?: string; dueOnly?: boolean; limit?: number } = {}
 ): Promise<VocabQuizItem[]> {
   const words = await getVocabWords(supabase, options);
   if (words.length === 0) return [];

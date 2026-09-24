@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getVocabQuizItems, getWeeklyMistakeQuizItems, VOCAB_QUIZ_OPTION_COUNT } from "@/lib/queries/vocab";
+import {
+  getVocabQuizItems,
+  getWeeklyMistakeQuizItems,
+  VOCAB_QUIZ_OPTION_COUNT,
+  DAILY_REVIEW_LIMIT,
+} from "@/lib/queries/vocab";
 import { VocabQuizRunner } from "@/components/vocab/VocabQuizRunner";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { Mascot } from "@/components/ui/Mascot";
@@ -40,9 +45,13 @@ export default async function VocabQuizPage({
 
   // Câu hỏi (kèm 4 lựa chọn đã trộn) dựng sẵn ở server — client không cần nhận
   // cả kho từ để tự bốc đáp án nhiễu nữa.
+  const isDaily = scope === "due" && !deckId;
   const items = await getVocabQuizItems(supabase, {
     deckId: deckId || undefined,
     dueOnly: scope === "due",
+    // Ôn toàn kho theo ngày thì giới hạn số câu, giống flashcard — xem
+    // DAILY_REVIEW_LIMIT ở src/lib/queries/vocab.ts.
+    limit: isDaily ? DAILY_REVIEW_LIMIT : undefined,
   });
 
   if (items.length < VOCAB_QUIZ_OPTION_COUNT) notFound();

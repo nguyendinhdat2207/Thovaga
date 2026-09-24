@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getVocabDecks, getWeeklyMistakeCount } from "@/lib/queries/vocab";
+import { getVocabDecks, getWeeklyMistakeCount, DAILY_REVIEW_LIMIT } from "@/lib/queries/vocab";
 import { LinkButton } from "@/components/ui/LinkButton";
 
 export default async function VocabPage() {
@@ -12,6 +12,11 @@ export default async function VocabPage() {
 
   const totalWords = decks.reduce((sum, d) => sum + d.wordCount, 0);
   const totalDue = decks.reduce((sum, d) => sum + d.dueCount, 0);
+  // "Ôn hôm nay" chỉ tải tối đa DAILY_REVIEW_LIMIT từ mỗi phiên (xem
+  // src/lib/queries/vocab.ts) — số trên nút phải khớp con số đó, không phải
+  // tổng số từ đến hạn (có thể lên tới hàng nghìn, ôn hết trong 1 lần là phi
+  // thực tế). Phần còn lại tự động xoay sang các ngày sau.
+  const todaySessionSize = Math.min(totalDue, DAILY_REVIEW_LIMIT);
 
   return (
     <div className="max-w-[1160px] mx-auto px-5 py-6 pb-10">
@@ -35,7 +40,7 @@ export default async function VocabPage() {
           size="lg"
           className={totalDue === 0 ? "pointer-events-none opacity-50" : ""}
         >
-          Ôn hôm nay ({totalDue})
+          Ôn hôm nay ({todaySessionSize})
         </LinkButton>
         <LinkButton href={`/vocab/quiz?scope=all`} variant="ghost" size="lg">
           Quiz tất cả từ
@@ -50,6 +55,12 @@ export default async function VocabPage() {
         )}
       </div>
 
+      {totalDue > DAILY_REVIEW_LIMIT && (
+        <p className="font-bold text-xs text-ink-faint mb-1">
+          Còn {totalDue} từ đến hạn — mỗi ngày chỉ ôn tối đa {DAILY_REVIEW_LIMIT} từ, phần còn lại
+          tự xoay sang các ngày sau.
+        </p>
+      )}
       <p className="font-bold text-xs text-ink-faint mb-7">
         {weeklyMistakeCount > 0
           ? "Reset vào thứ Hai hàng tuần — làm đúng lại thì từ đó tự ra khỏi danh sách."

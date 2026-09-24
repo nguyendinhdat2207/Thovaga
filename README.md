@@ -23,7 +23,12 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
 `vocab_decks`/`vocab_words`/`vocab_progress` (xem `supabase/migrations/0003_vocab.sql`).
 
 - **Flashcard** (`/vocab/flashcard?scope=due|deckId=...`): lật thẻ, tự đánh giá nhớ/chưa nhớ,
-  tiến trình lưu kiểu Leitner (box 0-5, `next_review` tăng dần 0→1→2→4→7→15 ngày).
+  tiến trình lưu kiểu Leitner (box 0-5, `next_review` tăng dần 0→1→2→4→7→15 ngày). "Ôn hôm nay"
+  (đến hạn, không gắn 1 bộ cụ thể) giới hạn tối đa `DAILY_REVIEW_LIMIT` = 100 từ/phiên (
+  `src/lib/queries/vocab.ts`) — kho từ có lúc đến hạn cùng lúc hàng nghìn từ, ôn hết 1 lần là phi
+  thực tế. Không cần đổi cách sắp xếp để bù lại: mỗi từ ôn xong có `next_review` mới nên hôm sau tự
+  rớt khỏi danh sách "đến hạn", nhường chỗ cho 100 từ tiếp theo — xoay vòng qua nhiều ngày. Ôn theo
+  đúng 1 bộ (`?deckId=...`) không bị giới hạn này vì mỗi bộ vốn chỉ vài chục từ.
 - **Quiz** (`/vocab/quiz?scope=all|deckId=...`): trắc nghiệm 4 đáp án tự sinh từ nghĩa các từ
   khác — server luôn tính lại đúng/sai (`src/lib/queries/vocab.ts#gradeVocabQuizAnswer`), không
   tin client.

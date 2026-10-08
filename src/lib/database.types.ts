@@ -6,6 +6,17 @@
 // của @supabase/postgrest-js — thiếu Relationships khiến toàn bộ suy luận
 // type của supabase-js sập về `never`.
 
+/** Ảnh chụp 1 từ trong phiên học từ vựng (cột vocab_sessions.answers). Chép luôn
+ * chữ en/vi để lịch sử vẫn đọc được dù từ gốc sau này bị sửa. `picked` là null
+ * ở flashcard (không có lựa chọn); `correct` ở flashcard = "Đã nhớ". */
+export interface VocabSessionAnswer {
+  en: string;
+  vi: string;
+  example?: string | null;
+  picked: string | null;
+  correct: boolean;
+}
+
 export type SubjectCategory = "school" | "data_ai" | "toeic";
 
 export interface Database {
@@ -91,6 +102,7 @@ export interface Database {
           score: number;
           total_questions: number;
           created_at: string;
+          completed: boolean;
         };
         Insert: {
           id?: string;
@@ -101,6 +113,7 @@ export interface Database {
           score: number;
           total_questions: number;
           created_at?: string;
+          completed?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["attempts"]["Insert"]>;
         Relationships: [
@@ -227,6 +240,9 @@ export interface Database {
           correct_count: number;
           created_at: string;
           deck_id: string | null;
+          title: string | null;
+          answers: VocabSessionAnswer[];
+          completed: boolean;
         };
         Insert: {
           id?: string;
@@ -238,6 +254,9 @@ export interface Database {
           correct_count: number;
           created_at?: string;
           deck_id?: string | null;
+          title?: string | null;
+          answers?: VocabSessionAnswer[];
+          completed?: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["vocab_sessions"]["Insert"]>;
         Relationships: [];
@@ -404,6 +423,7 @@ export interface Database {
             selected_option: number | null;
             is_correct: boolean;
           }[];
+          p_completed?: boolean;
         };
         Returns: Database["public"]["Tables"]["attempts"]["Row"];
       };

@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, VocabWord, VocabProgress } from "@/lib/database.types";
+import type {
+  Database,
+  VocabWord,
+  VocabProgress,
+  VocabSession,
+  VocabSessionAnswer,
+} from "@/lib/database.types";
 import { parseSessionWindow, toCount, ValidationError, type SessionWindow } from "@/lib/validate";
 import { shuffleInPlace, shuffled } from "@/lib/shuffle";
 
@@ -19,9 +25,36 @@ export interface RecordVocabSessionInput {
   correct_count: number;
   /** Bộ từ cụ thể nếu phiên này học nguyên 1 bộ (mở Flashcard/Quiz từ trang
    * /vocab). Bỏ trống khi phiên trải trên nhiều bộ ("Ôn hôm nay", "Quiz tất
-   * cả từ", "Từ sai tuần này") — những phiên đó không cộng vào riêng bộ nào,
+   * cả từ", "Ôn gói từ sai") — những phiên đó không cộng vào riêng bộ nào,
    * tránh làm sai lệch "số lần đã học" của từng bộ. */
   deck_id?: string | null;
+  /** Nhãn hiển thị trong lịch sử (vd "Ôn gói 3 · từ sai"). */
+  title?: string | null;
+  /** Chi tiết từng từ của phiên, để xem lại sau. */
+  answers?: VocabSessionAnswer[];
+  /** false = thoát giữa chừng. Mặc định true. Phiên dở không cộng vào "số lần đã học". */
+  completed?: boolean;
+}
+
+/** Trần số từ chi tiết lưu mỗi phiên — phiên dài nhất (gói từ sai) là 50 dòng,
+ * "Ôn hôm nay" là 100; chừa dư nhưng chặn payload phình vô hạn. */
+export const MAX_SESSION_ANSWERS = 500;
+
+// Input đến từ trình duyệt: ép về đúng hình dạng, cắt độ dài chuỗi, bỏ mục rác.
+function sanitizeSessionAnswers(raw: unknown): VocabSessionAnswer[] {
+  if (!Array.isArray(raw)) return [];
+  const clip = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+  return raw
+    .slice(0, MAX_SESSION_ANSWERS)
+    .filter((a): a is Record<string, unknown> => !!a && typeof a === "object")
+    .map((a) => ({
+      en: clip(a.en, 200),
+      vi: clip(a.vi, 500),
+      example: typeof a.example === "string" && a.example ? a.example.slice(0, 500) : null,
+      picked: typeof a.picked === "string" ? a.picked.slice(0, 500) : null,
+      correct: a.correct === true,
+    }))
+    .filter((a) => a.en && a.vi);
 }
 
 const VOCAB_SESSION_MODES = ["flashcard", "quiz"] as const;
@@ -62,8 +95,56 @@ export async function recordVocabSession(
     word_count: wordCount,
     correct_count: correctCount,
     deck_id: deckId,
+    title: typeof input.title === "string" && input.title.trim() ? input.title.trim().slice(0, 120) : null,
+    answers: sanitizeSessionAnswers(input.answers),
+    completed: input.completed !== false,
   });
   if (error) throw error;
+}
+
+export type VocabSessionSummary = Pick<
+  VocabSession,
+  "id" | "mode" | "title" | "word_count" | "correct_count" | "duration_seconds" | "created_at" | "completed"
+>;
+
+/** Số phiên mỗi trang lịch sử từ vựng. */
+export const VOCAB_HISTORY_PAGE_SIZE = 30;
+
+// Lấy dư 1 dòng để biết còn trang sau hay không mà không cần câu count riêng.
+// Không đọc cột `answers` ở danh sách — chỉ cần khi mở chi tiết 1 phiên.
+export async function getVocabSessions(
+  supabase: SupabaseClient<Database>,
+  page: number
+): Promise<{ sessions: VocabSessionSummary[]; hasMore: boolean }> {
+  const from = (Math.max(1, page) - 1) * VOCAB_HISTORY_PAGE_SIZE;
+  const { data, error } = await supabase
+    .from("vocab_sessions")
+    .select("id, mode, title, word_count, correct_count, duration_seconds, created_at, completed")
+    .order("created_at", { ascending: false })
+    .range(from, from + VOCAB_HISTORY_PAGE_SIZE);
+  if (error) throw error;
+  const rows = data ?? [];
+  return {
+    sessions: rows.slice(0, VOCAB_HISTORY_PAGE_SIZE),
+    hasMore: rows.length > VOCAB_HISTORY_PAGE_SIZE,
+  };
+}
+
+export async function getVocabSession(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<VocabSession | null> {
+  const { data, error } = await supabase
+    .from("vocab_sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    // id không phải uuid hợp lệ → Postgres báo lỗi cú pháp; coi như không tìm thấy.
+    if (error.code === "22P02") return null;
+    throw error;
+  }
+  return data;
 }
 
 // Mọi phép tính theo ngày ("đến hạn ôn", interval Leitner 0/1/2/4/7/15 ngày)

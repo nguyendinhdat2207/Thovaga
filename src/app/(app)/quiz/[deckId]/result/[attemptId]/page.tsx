@@ -29,6 +29,9 @@ export default async function ResultPage({
       </h1>
       <p className="mt-1 font-bold text-sm text-ink-muted mb-6">
         {subjectName} · lần làm thứ {previousAttempts.length + 1}
+        {!attempt.completed && (
+          <span className="text-orange"> · làm dở — điểm tính trên {attempt.total_questions} câu đã làm</span>
+        )}
       </p>
 
       <div className="grid grid-cols-3 border border-border rounded-2xl overflow-hidden">

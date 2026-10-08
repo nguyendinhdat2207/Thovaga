@@ -3,8 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VocabQuizItem } from "@/lib/queries/vocab";
+import type { VocabSessionAnswer } from "@/lib/database.types";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
+import { postJsonWithRetry } from "@/lib/client/post-json";
+import { useSaveOnLeave } from "@/lib/client/use-save-on-leave";
 
 interface WrongItem {
   en: string;
@@ -41,6 +44,9 @@ export function VocabQuizRunner({
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongList, setWrongList] = useState<WrongItem[]>([]);
+  // Mọi câu đã trả lời (đúng lẫn sai) — gửi kèm phiên để xem lại trong lịch sử.
+  // Khác kho từ sai: kho chỉ ghi câu sai (server làm), lịch sử ghi tất cả.
+  const [results, setResults] = useState<VocabSessionAnswer[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => new Date());
   const sessionSavedRef = useRef(false);
@@ -51,23 +57,36 @@ export function VocabQuizRunner({
   const done = index >= queue.length;
   const current = queue[index];
 
+  // Thoát giữa chừng vẫn lưu các câu đã làm (phiên dở, completed:false). Không
+  // đụng tới việc xoá gói từ sai — việc đó chỉ xảy ra khi làm xong và đúng 100%.
+  useSaveOnLeave("/api/vocab/sessions", () => {
+    if (done || results.length === 0) return null;
+    return {
+      mode: "quiz",
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      word_count: results.length,
+      correct_count: results.filter((r) => r.correct).length,
+      deck_id: deckId,
+      title: `${title ?? (deckId ? "Quiz theo bộ" : "Quiz")} · dở dang`,
+      answers: results,
+      completed: false,
+    };
+  });
+
   // Ghi lại thời lượng phiên quiz khi hoàn thành — chỉ 1 lần mỗi phiên.
   useEffect(() => {
     if (!done || sessionSavedRef.current) return;
     sessionSavedRef.current = true;
-    fetch("/api/vocab/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "quiz",
-        started_at: startedAt.toISOString(),
-        finished_at: new Date().toISOString(),
-        word_count: queue.length,
-        correct_count: correctCount,
-        deck_id: deckId,
-      }),
-    }).catch(() => {
-      // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.
+    void postJsonWithRetry("/api/vocab/sessions", {
+      mode: "quiz",
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      word_count: queue.length,
+      correct_count: correctCount,
+      deck_id: deckId,
+      title: title ?? (deckId ? "Quiz theo bộ" : "Quiz"),
+      answers: results,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
@@ -103,6 +122,10 @@ export function VocabQuizRunner({
     const answer = current.vi;
     setCorrectAnswer(answer);
     setAnswered(true);
+    setResults((r) => [
+      ...r,
+      { en: current.en, vi: answer, example: current.example, picked: opt, correct },
+    ]);
     if (correct) {
       setCorrectCount((c) => c + 1);
     } else {

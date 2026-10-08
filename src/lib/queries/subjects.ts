@@ -22,6 +22,8 @@ export async function getSubjectsWithProgress(
     supabase
       .from("attempts")
       .select("deck_id, score, created_at")
+      // Bài làm dở không tính vào tiến độ môn / điểm gần nhất.
+      .eq("completed", true)
       .order("created_at", { ascending: false }),
   ]);
 
@@ -95,9 +97,9 @@ export async function getSubjectDetail(
 
   const decksWithStats: DeckWithStats[] = (decks ?? []).map((deck) => {
     const deckAttempts = (attempts ?? []).filter((a) => a.deck_id === deck.id);
-    const bestScore = deckAttempts.length
-      ? Math.max(...deckAttempts.map((a) => a.score))
-      : null;
+    // Điểm cao nhất chỉ xét bài làm trọn vẹn (điểm bài dở tính trên số câu đã làm).
+    const completedScores = deckAttempts.filter((a) => a.completed).map((a) => a.score);
+    const bestScore = completedScores.length ? Math.max(...completedScores) : null;
     return {
       ...deck,
       attemptCount: deckAttempts.length,

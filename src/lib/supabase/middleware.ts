@@ -29,7 +29,10 @@ export async function updateSession(request: NextRequest) {
   const isLoggedIn = !!data.user;
   const path = request.nextUrl.pathname;
 
-  const isPublic = path.startsWith("/login") || path.startsWith("/api/auth");
+  const isPublic = path.startsWith("/login") ||
+    path.startsWith("/api/auth") ||
+    // Vercel Cron không có phiên đăng nhập; route tự kiểm tra CRON_SECRET.
+    path.startsWith("/api/cron/");
 
   if (!isLoggedIn && !isPublic) {
     // Route API phải nhận 401 JSON, không phải redirect sang trang HTML /login:

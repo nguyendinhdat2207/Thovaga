@@ -14,6 +14,8 @@ export interface RecordAttemptInput {
   started_at: string;
   finished_at: string;
   answers: SubmitAnswerInput[];
+  /** false = thoát giữa chừng, chỉ có các câu đã làm. Mặc định true. */
+  completed?: boolean;
 }
 
 export class RecordAttemptError extends Error {
@@ -31,6 +33,7 @@ export async function recordAttempt(
   input: RecordAttemptInput
 ): Promise<Attempt> {
   const { deck_id, started_at, finished_at, answers } = input;
+  const completed = input.completed !== false;
 
   if (!deck_id || !Array.isArray(answers) || answers.length === 0) {
     throw new RecordAttemptError("deck_id và answers là bắt buộc.");
@@ -82,6 +85,7 @@ export async function recordAttempt(
     p_score: score,
     p_total_questions: totalQuestions,
     p_answers: gradedAnswers,
+    p_completed: completed,
   });
   if (attemptErr) throw attemptErr;
 
@@ -178,6 +182,7 @@ export async function getAttemptResult(
     .from("attempts")
     .select("score, created_at")
     .eq("deck_id", deck.id)
+    .eq("completed", true)
     .neq("id", attemptId)
     .order("created_at", { ascending: false })
     .limit(2);
@@ -216,14 +221,16 @@ export interface HistoryAttempt extends Attempt {
   subjectName: string;
 }
 
-/** Số lượt làm bài tối đa hiển thị trong lịch sử — bảng chỉ tăng, không giới
- * hạn thì trang sẽ chậm dần đều. Thống kê tổng vẫn tính trên toàn bộ dữ liệu
- * vì được cộng dồn ở Postgres. */
+/** Số lượt làm bài mỗi trang lịch sử — bảng chỉ tăng nên phải phân trang
+ * (?page=N), không thì trang chậm dần. Mọi lượt vẫn xem được qua các trang;
+ * thống kê tổng tính trên toàn bộ dữ liệu vì được cộng dồn ở Postgres. */
 export const HISTORY_PAGE_SIZE = 50;
 
 export async function getHistory(
-  supabase: SupabaseClient<Database>
-): Promise<{ attempts: HistoryAttempt[]; stats: HistoryStats }> {
+  supabase: SupabaseClient<Database>,
+  page = 1
+): Promise<{ attempts: HistoryAttempt[]; stats: HistoryStats; hasMore: boolean }> {
+  const from = (Math.max(1, Math.floor(page) || 1) - 1) * HISTORY_PAGE_SIZE;
   const [
     { data: attempts, error: attemptsErr },
     { data: summary, error: summaryErr },
@@ -234,7 +241,8 @@ export async function getHistory(
       .from("attempts")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(HISTORY_PAGE_SIZE),
+      // Lấy dư 1 dòng để biết còn trang sau mà không cần câu count riêng.
+      .range(from, from + HISTORY_PAGE_SIZE),
     // Số lượt và điểm trung bình tính trên TOÀN BỘ lịch sử, không phải chỉ
     // trang đầu — nên lấy riêng bằng aggregate thay vì reduce() trên mảng trên.
     supabase.rpc("attempt_summary").single(),
@@ -244,7 +252,10 @@ export async function getHistory(
   if (attemptsErr) throw attemptsErr;
   if (summaryErr) throw summaryErr;
 
-  const deckIds = Array.from(new Set((attempts ?? []).map((a) => a.deck_id)));
+  const hasMore = (attempts ?? []).length > HISTORY_PAGE_SIZE;
+  const pageAttempts = (attempts ?? []).slice(0, HISTORY_PAGE_SIZE);
+
+  const deckIds = Array.from(new Set(pageAttempts.map((a) => a.deck_id)));
   const { data: decks, error: decksErr } =
     deckIds.length > 0
       ? await supabase.from("decks").select("id, title, subject_id").in("id", deckIds)
@@ -261,7 +272,7 @@ export async function getHistory(
   const deckById = new Map((decks ?? []).map((d) => [d.id, d] as const));
   const subjectNameById = new Map((subjects ?? []).map((s) => [s.id, s.name] as const));
 
-  const enriched: HistoryAttempt[] = (attempts ?? []).map((a) => {
+  const enriched: HistoryAttempt[] = pageAttempts.map((a) => {
     const deck = deckById.get(a.deck_id);
     return {
       ...a,
@@ -272,6 +283,7 @@ export async function getHistory(
 
   return {
     attempts: enriched,
+    hasMore,
     stats: {
       totalMinutes,
       attemptCount: Number(summary?.attempt_count ?? 0),

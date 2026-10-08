@@ -6,6 +6,7 @@ import type { Deck, Question, Subject } from "@/lib/database.types";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
 import { formatDuration, optionLetter } from "@/lib/format";
+import { useSaveOnLeave } from "@/lib/client/use-save-on-leave";
 
 type DeckWithSubject = Deck & { subject: Pick<Subject, "id" | "name" | "category"> | null };
 
@@ -39,6 +40,23 @@ export function QuizRunner({
   const current = questions[index];
   const elapsedSeconds = Math.round((now - startedAt.getTime()) / 1000);
   const isLast = index + 1 >= questions.length;
+
+  // Thoát giữa chừng (✕, nút back, đóng tab) vẫn lưu các câu đã làm, đánh dấu
+  // completed:false. Đang nộp bài thì thôi — đường nộp chính lo việc lưu.
+  useSaveOnLeave("/api/attempts", () => {
+    if (submitting) return null;
+    const answered = checked
+      ? [...answers, { question_id: current.id, selected_option: picked }]
+      : answers;
+    if (answered.length === 0) return null;
+    return {
+      deck_id: deck.id,
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      answers: answered,
+      completed: false,
+    };
+  });
 
   async function finish(finalAnswers: AnswerRecord[]) {
     setSubmitting(true);

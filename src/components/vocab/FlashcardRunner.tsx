@@ -3,8 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { VocabWordWithProgress } from "@/lib/queries/vocab";
+import type { VocabSessionAnswer } from "@/lib/database.types";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
+import { postJsonWithRetry } from "@/lib/client/post-json";
+import { useSaveOnLeave } from "@/lib/client/use-save-on-leave";
 
 // Phải khớp với `.flip-card { transition: transform 0.5s ... }` trong
 // globals.css — dùng để biết khi nào animation lật thẻ đã xong.
@@ -34,30 +37,44 @@ export function FlashcardRunner({
   const transitioningRef = useRef(false);
   const [transitioning, setTransitioning] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
+  // Chi tiết từng thẻ đã chấm — gửi kèm phiên để xem lại trong lịch sử.
+  const [results, setResults] = useState<VocabSessionAnswer[]>([]);
   const [startedAt, setStartedAt] = useState(() => new Date());
   const sessionSavedRef = useRef(false);
 
   const done = index >= queue.length;
   const current = queue[index];
 
+  // Thoát giữa chừng vẫn lưu các thẻ đã chấm (phiên dở, completed:false).
+  useSaveOnLeave("/api/vocab/sessions", () => {
+    if (done || results.length === 0) return null;
+    return {
+      mode: "flashcard",
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      word_count: results.length,
+      correct_count: results.filter((r) => r.correct).length,
+      deck_id: deckId,
+      title: "Flashcard · dở dang",
+      answers: results,
+      completed: false,
+    };
+  });
+
   // Ghi lại thời lượng phiên ôn tập khi hoàn thành — chỉ 1 lần mỗi phiên
   // (sessionSavedRef chặn double-post nếu component re-render).
   useEffect(() => {
     if (!done || sessionSavedRef.current) return;
     sessionSavedRef.current = true;
-    fetch("/api/vocab/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "flashcard",
-        started_at: startedAt.toISOString(),
-        finished_at: new Date().toISOString(),
-        word_count: queue.length,
-        correct_count: knownCount,
-        deck_id: deckId,
-      }),
-    }).catch(() => {
-      // Không lưu được thời lượng phiên này — không ảnh hưởng trải nghiệm.
+    void postJsonWithRetry("/api/vocab/sessions", {
+      mode: "flashcard",
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      word_count: queue.length,
+      correct_count: knownCount,
+      deck_id: deckId,
+      title: "Flashcard",
+      answers: results,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
@@ -83,7 +100,12 @@ export function FlashcardRunner({
     // tiếp trước khi thấy mặt trước của nó.
     setTransitioning(true);
     setFlipped(false);
+    const word = current;
     window.setTimeout(() => {
+      setResults((r) => [
+        ...r,
+        { en: word.en, vi: word.vi, example: word.example, picked: null, correct: know },
+      ]);
       if (know) setKnownCount((c) => c + 1);
       setIndex((i) => i + 1);
       transitioningRef.current = false;
@@ -117,6 +139,7 @@ export function FlashcardRunner({
             onClick={() => {
               setIndex(0);
               setKnownCount(0);
+              setResults([]);
               setFlipped(false);
               setStartedAt(new Date());
               sessionSavedRef.current = false;

@@ -55,6 +55,20 @@ Mục riêng ở `/vocab`, tách khỏi mô hình `subjects/decks/questions` —
   (`?deckId=...`) — "Ôn hôm nay"/"Quiz tất cả từ"/"Ôn gói từ sai" trải trên nhiều bộ nên không
   gắn vào riêng bộ nào (`deck_id = null`).
 
+### Xem lại kết quả đã làm
+
+Mọi kết quả đều được giữ vĩnh viễn và xem lại được:
+
+- **Trắc nghiệm**: `/history` liệt kê mọi lượt (phân trang `?page=N`, 50 lượt/trang); bấm vào một
+  lượt để mở lại trang kết quả (`/quiz/[deckId]/result/[attemptId]`) với các câu sai.
+- **Từ vựng**: `/vocab/history` liệt kê mọi phiên Flashcard/Quiz đã hoàn thành; bấm vào để xem từng
+  từ đúng/sai (cột `vocab_sessions.answers`, migration `0017`). Phiên cũ trước `0017` chỉ còn số
+  liệu tổng.
+- Khác biệt duy nhất: **Kho từ sai** chỉ ghi câu SAI (câu đúng bỏ qua) và gói bị xoá khi ôn đúng
+  100%; lịch sử phiên thì ghi cả đúng lẫn sai.
+- `attempts`/`attempt_answers` được gắn trigger chặn xoá hàng loạt như dữ liệu từ vựng. Chỉ phiên
+  làm **xong** lưu bình thường; thoát giữa chừng (✕, nút back, đóng tab) cũng lưu các câu đã làm với `completed = false` (nhãn "làm dở"/"dở dang"): tính vào thời gian học và xem lại được, nhưng không tính vào điểm trung bình, điểm cao nhất, tiến độ môn và "số lần đã học" của bộ từ.
+
 ### Lộ trình 2 tháng đầu (`/roadmap`)
 
 Checklist 48 ngày (8 tuần × 6 ngày, nghỉ Chủ nhật, chia Tháng 1/Tháng 2) hiển thị kiểu đường
@@ -229,6 +243,12 @@ việc bị xoá nhầm bởi một câu SQL/migration chạy tay sau này (kể
 ## Deploy
 
 **Supabase:** giữ project đã tạo ở bước "Chạy local" — free tier đủ dùng cho 1 người dùng.
+
+**Keep-alive Supabase:** `vercel.json` có cron gọi `GET /api/cron/keepalive` lúc 03:00 UTC thứ Hai
+và thứ Năm (2 lần/tuần) để project free tier không bị tạm dừng vì không hoạt động. Route chạy một
+`select` nhẹ qua REST và chỉ nhận request có `Authorization: Bearer $CRON_SECRET`. Cần thêm biến
+môi trường `CRON_SECRET` (chuỗi ngẫu nhiên dài, vd `openssl rand -hex 32`) trên Vercel — Vercel tự
+gắn nó vào header khi chạy cron. Thiếu biến này route trả 401 và job sẽ không giữ được DB.
 
 **Vercel:**
 

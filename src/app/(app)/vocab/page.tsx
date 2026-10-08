@@ -35,9 +35,14 @@ export default async function VocabPage() {
             {totalWords} từ · {decks.length} bộ · {totalDue} từ cần ôn hôm nay
           </p>
         </div>
-        <LinkButton href="/vocab/import" variant="ghost" size="sm">
-          + Thêm từ mới
-        </LinkButton>
+        <div className="flex gap-2">
+          <LinkButton href="/vocab/history" variant="ghost" size="sm">
+            Lịch sử
+          </LinkButton>
+          <LinkButton href="/vocab/import" variant="ghost" size="sm">
+            + Thêm từ mới
+          </LinkButton>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3.5 mb-2.5">

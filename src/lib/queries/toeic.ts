@@ -72,7 +72,28 @@ async function getQuizStats(
 // Toàn bộ nội dung tĩnh chỉ ~6 sách / ~75 bài / ~220 đề (cột nhỏ, không kèm
 // theory_md) nên tải 1 lần rồi gom ở app; phần cộng dồn kết quả làm bài vẫn ở
 // Postgres (toeic_quiz_stats) theo SPEC 5.3.
+// Chưa chạy migration 0018 → PostgREST báo không thấy bảng/hàm. Trả rỗng để
+// trang hiện hướng dẫn chạy migration thay vì sập cả trang (lỗi 500).
+const MISSING_SCHEMA_CODES = new Set(["PGRST205", "PGRST202", "42P01", "42883"]);
+export function isMissingSchemaError(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return typeof code === "string" && MISSING_SCHEMA_CODES.has(code);
+}
+
 export async function getToeicOverview(
+  supabase: SupabaseClient<Database>,
+  skill: ToeicSkill,
+  bookId: string | null
+): Promise<ToeicOverview> {
+  try {
+    return await loadToeicOverview(supabase, skill, bookId);
+  } catch (err) {
+    if (isMissingSchemaError(err)) return { books: [], selected: null };
+    throw err;
+  }
+}
+
+async function loadToeicOverview(
   supabase: SupabaseClient<Database>,
   skill: ToeicSkill,
   bookId: string | null
@@ -161,7 +182,10 @@ export async function getToeicLesson(
     .select("*")
     .eq("id", lessonId)
     .maybeSingle<ToeicLesson>();
-  if (error) throw error;
+  if (error) {
+    if (isMissingSchemaError(error)) return null;
+    throw error;
+  }
   if (!lesson) return null;
 
   const [bookRes, siblingsRes, quizzesRes, progressRes, stats] = await Promise.all([

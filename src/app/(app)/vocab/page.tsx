@@ -39,6 +39,9 @@ export default async function VocabPage() {
           <LinkButton href="/vocab/history" variant="ghost" size="sm">
             Lịch sử
           </LinkButton>
+          <LinkButton href="/vocab/inbox" variant="ghost" size="sm">
+            Sổ ghi nhanh
+          </LinkButton>
           <LinkButton href="/vocab/import" variant="ghost" size="sm">
             + Thêm từ mới
           </LinkButton>

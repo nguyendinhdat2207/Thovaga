@@ -87,6 +87,22 @@ theo định nghĩa sẽ không bao giờ có ngày nhỏ hơn nó còn trống,
 chưa tick" — viền cam, cần học bù — sẽ không bao giờ xảy ra được). Tick/bỏ tick ghi thẳng vào
 `roadmap_progress` qua `POST /api/roadmap/progress`, cập nhật giao diện lạc quan (không đợi mạng).
 
+### TOEIC theo sách Zenlish (`/toeic`)
+
+Lộ trình học theo 6 cuốn Zenlish (Foundation → Beginner → Camp Bomb → Submarine, tách Nghe/Đọc):
+73 bài, 67 bài có lý thuyết chép từ sách (Markdown, hiển thị bằng `react-markdown` + GFM), 217 đề
+miễn phí trên zenlishtoeic.vn gắn đúng bài. Mỗi bài: lý thuyết bên trái, cột đề bên phải — bấm tên
+đề mở Zenlish ở tab mới, làm xong quay lại **Ghi điểm** (số đúng / tổng, lỗi chính, ghi chú) và
+**Đánh dấu học xong**. Schema ở migration `0018`, nội dung seed `0019` (sinh từ
+`supabase/seed/toeic/content.json`).
+
+### Sổ ghi nhanh từ mới (`/vocab/inbox`)
+
+Đang làm đề gặp từ lạ → gõ vào ô "Sổ ghi nhanh" ngay trong trang bài TOEIC (tự điền nguồn, vd
+`Ca RC L2`). Cuối tuần vào Từ vựng › Sổ ghi nhanh → **Copy cho Claude** → Claude trả về khối
+`từ | nghĩa | ví dụ` → dán vào `/vocab/import` → bấm **Đánh dấu đã xử lý hết**. Migration `0020`
+seed sẵn 23 bộ từ TOEIC (1000 từ chia 20 bộ + 3 bộ chủ đề), bỏ qua bộ trùng tên nên chạy lại an toàn.
+
 ### Import bằng Markdown (dùng cho đề đã OCR sẵn)
 
 Cả `/upload` (trắc nghiệm) và `/vocab/import` (từ vựng) đều có nút **"Dán Markdown"** bên cạnh chế
@@ -133,7 +149,7 @@ Answer: A
 ## Chạy local
 
 1. Tạo project Supabase mới tại [supabase.com](https://supabase.com).
-2. Chạy migration: `supabase/migrations/0001_init.sql` rồi `0002_seed_subjects.sql`
+2. Chạy lần lượt toàn bộ migration `supabase/migrations/0001_init.sql` → `0020_toeic_vocab_seed.sql`
    (SQL Editor trên dashboard, hoặc `supabase db push` nếu dùng Supabase CLI).
 3. Tạo bucket Storage tên `documents` nếu migration insert vào `storage.buckets` bị
    dashboard chặn — kiểm tra lại trong Storage > Buckets.

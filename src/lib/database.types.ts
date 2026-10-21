@@ -303,6 +303,113 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["roadmap_progress"]["Insert"]>;
         Relationships: [];
       };
+      toeic_books: {
+        Row: {
+          id: string;
+          title: string;
+          skill: "listening" | "reading";
+          level: string;
+          sort_order: number;
+          target: string;
+          description: string;
+        };
+        Insert: Database["public"]["Tables"]["toeic_books"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["toeic_books"]["Insert"]>;
+        Relationships: [];
+      };
+      toeic_lessons: {
+        Row: {
+          id: string;
+          book_id: string;
+          lesson_no: number;
+          title: string;
+          part: number | null;
+          kind: "theory" | "practice";
+          theory_md: string | null;
+          checkpoint: string | null;
+        };
+        Insert: Database["public"]["Tables"]["toeic_lessons"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["toeic_lessons"]["Insert"]>;
+        Relationships: [];
+      };
+      toeic_quizzes: {
+        Row: {
+          slug: string;
+          lesson_id: string;
+          title: string;
+          kind: "lesson" | "homework";
+          part: number | null;
+          question_count: number | null;
+          sort_order: number;
+        };
+        Insert: Database["public"]["Tables"]["toeic_quizzes"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["toeic_quizzes"]["Insert"]>;
+        Relationships: [];
+      };
+      toeic_lesson_progress: {
+        Row: {
+          user_id: string;
+          lesson_id: string;
+          completed: boolean;
+          completed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string;
+          lesson_id: string;
+          completed?: boolean;
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["toeic_lesson_progress"]["Insert"]>;
+        Relationships: [];
+      };
+      toeic_quiz_results: {
+        Row: {
+          id: string;
+          user_id: string;
+          quiz_slug: string;
+          correct: number;
+          total: number;
+          mistake_type: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          quiz_slug: string;
+          correct: number;
+          total: number;
+          mistake_type?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["toeic_quiz_results"]["Insert"]>;
+        Relationships: [];
+      };
+      vocab_inbox: {
+        Row: {
+          id: string;
+          user_id: string;
+          raw_text: string;
+          context: string | null;
+          source: string | null;
+          created_at: string;
+          processed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          raw_text: string;
+          context?: string | null;
+          source?: string | null;
+          created_at?: string;
+          processed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["vocab_inbox"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     // Hàm Postgres gọi qua supabase.rpc() — xem supabase/migrations/0006_atomic_writes.sql.
@@ -410,6 +517,19 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { attempt_count: number; average_score: number }[];
       };
+      // Thống kê kết quả TOEIC theo đề — xem 0018_toeic.sql.
+      toeic_quiz_stats: {
+        Args: { p_lesson_ids?: string[] | null };
+        Returns: {
+          quiz_slug: string;
+          lesson_id: string;
+          attempts: number;
+          last_correct: number;
+          last_total: number;
+          last_at: string;
+          best_ratio: number;
+        }[];
+      };
       record_attempt: {
         Args: {
           p_deck_id: string;
@@ -442,3 +562,8 @@ export type VocabProgress = Database["public"]["Tables"]["vocab_progress"]["Row"
 export type VocabSession = Database["public"]["Tables"]["vocab_sessions"]["Row"];
 export type RoadmapDay = Database["public"]["Tables"]["roadmap_days"]["Row"];
 export type RoadmapProgress = Database["public"]["Tables"]["roadmap_progress"]["Row"];
+export type ToeicBook = Database["public"]["Tables"]["toeic_books"]["Row"];
+export type ToeicLesson = Database["public"]["Tables"]["toeic_lessons"]["Row"];
+export type ToeicQuiz = Database["public"]["Tables"]["toeic_quizzes"]["Row"];
+export type ToeicQuizResult = Database["public"]["Tables"]["toeic_quiz_results"]["Row"];
+export type VocabInboxItem = Database["public"]["Tables"]["vocab_inbox"]["Row"];

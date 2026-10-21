@@ -121,6 +121,10 @@ Quy tắc đặt file:
 | `POST /api/vocab/sessions` | `recordVocabSession` | |
 | `POST /api/vocab/mistakes/clear` | `clearMistakePack` | chỉ `VocabQuizRunner` gọi |
 | `POST /api/roadmap/progress` | `setRoadmapProgress` | upsert theo `(user_id, day)` |
+| `POST /api/toeic/results` | `recordToeicResult` | điểm tự nhập sau khi làm đề Zenlish; `total` phải khớp `question_count` nếu đề có |
+| `POST /api/toeic/progress` | `setToeicLessonProgress` | upsert theo `(user_id, lesson_id)` |
+| `POST /api/vocab/inbox` | `addInboxItem` | ghi 1 từ vào Sổ ghi nhanh (≤ 300 ký tự) |
+| `POST /api/vocab/inbox/processed` | `markInboxProcessed` | đánh dấu đã xử lý, tối đa 500 id/lần |
 
 Thêm endpoint mới → cập nhật bảng này.
 
@@ -173,7 +177,7 @@ Thêm endpoint mới → cập nhật bảng này.
 
 ## 7. Migration
 
-- File `supabase/migrations/NNNN_mo_ta.sql`, số tăng liên tục (hiện đến `0016`). **MUST NOT** sửa
+- File `supabase/migrations/NNNN_mo_ta.sql`, số tăng liên tục (hiện đến `0020`). **MUST NOT** sửa
   migration đã chạy; sửa schema = tạo migration mới.
 - Mở đầu mỗi file là comment tiếng Việt nêu **lý do** thay đổi (xem `0016`).
 - Viết idempotent khi được (`if not exists`, `create or replace`, `drop … if exists`). Đổi chữ ký
@@ -187,7 +191,11 @@ Thêm endpoint mới → cập nhật bảng này.
   *không* gắn trigger này.
 - Hằng số lặp giữa SQL và TS **phải đổi cả hai nơi cùng lúc**: gói từ sai = 50 dòng
   (`VOCAB_MISTAKE_PACK_SIZE` ↔ `record_mistake_entry` trong `0016`); số ngày roadmap = 48
-  (`ROADMAP_TOTAL_DAYS` ↔ seed `roadmap-2-thang-dau.json`).
+  (`ROADMAP_TOTAL_DAYS` ↔ seed `roadmap-2-thang-dau.json`); giới hạn TOEIC/Sổ ghi nhanh
+  (`TOEIC_MAX_QUESTIONS` = 200, `TOEIC_NOTE_MAX` = 500, `INBOX_TEXT_MAX` = 300, `INBOX_CONTEXT_MAX` = 500,
+  `INBOX_SOURCE_MAX` = 80 ↔ check constraint trong `0018`).
+- Nội dung TOEIC (`0019`) và 23 bộ từ TOEIC (`0020`) **sinh từ** `supabase/seed/toeic/*.json` —
+  sửa nội dung thì sửa JSON rồi sinh lại migration mới (upsert theo khoá), không sửa tay `0019`.
 
 ## 8. Quy tắc nghiệp vụ theo miền
 
@@ -245,6 +253,25 @@ Thêm endpoint mới → cập nhật bảng này.
 - `day` ∈ [1, 48] nguyên; `note` cắt còn 500 ký tự, rỗng → `null`.
 - `roadmap_days` chỉ đọc (có trigger chống xoá hàng loạt), seed một lần từ file JSON.
 
+### 8.3b TOEIC theo sách Zenlish
+
+- 6 sách (`toeic_books`: Foundation, Beginner, Camp Bomb LC/RC, Submarine LC/RC) → bài
+  (`toeic_lessons`, id `<book>-NN`) → đề (`toeic_quizzes`, khoá = slug Zenlish). Ba bảng này là nội
+  dung tĩnh: chỉ đọc qua RLS, có trigger chống xoá hàng loạt.
+- App **không** nhúng/sao chép đề: link mở `https://zenlishtoeic.vn/stm-quizzes/<slug>/` ở tab mới
+  (`zenlishQuizUrl`). Làm xong người học tự nhập điểm → `toeic_quiz_results` (append-only, nhiều lần).
+- Quy tắc đối chiếu đã kiểm: trên web "RC k" của Camp Bomb/Submarine = **Lesson k của sách Đọc**
+  ("Lesson N" trong slug là số buổi học chung LC/RC, không phải số bài sách).
+- Bài hiện tại = **bài lớn nhất đã đánh dấu xong + 1** (`currentLessonNo`), cùng logic 8.3.
+- Thống kê đề (lần làm, điểm gần nhất, tốt nhất) cộng dồn ở Postgres bằng `toeic_quiz_stats()`.
+- Tiến trình/kết quả/Sổ ghi nhanh tách theo `user_id` như `roadmap_progress`.
+
+### 8.3c Sổ ghi nhanh từ mới (`vocab_inbox`)
+
+- Ghi thô (`raw_text` + câu gốc + nguồn), **không** tạo `vocab_words` trực tiếp: cuối tuần copy
+  (`formatInboxForClaude`) sang Claude chuẩn hoá thành `từ | nghĩa | ví dụ`, nhập qua `/vocab/import`
+  (luôn tạo bộ mới), rồi đánh dấu `processed_at`. Không có đường xoá trong app.
+
 ### 8.4 Import Markdown
 
 Parser dùng chung ở `lib/markdown-import.ts` cho cả trắc nghiệm và từ vựng; có test. Quy tắc:
@@ -275,7 +302,7 @@ Parser dùng chung ở `lib/markdown-import.ts` cho cả trắc nghiệm và t�
   link đến nơi tạo dữ liệu.
 - `AppChrome` ẩn header/nav khi đang làm bài (`/quiz/*` trừ `/result`, `/vocab/flashcard`,
   `/vocab/quiz`). Thêm màn hình "toàn màn" → cập nhật `hideChrome`. Thêm mục nav → sửa `NAV_ITEMS`
-  (thanh dưới mobile dùng `grid-cols-5`, nên thêm mục thứ 6 phải chỉnh lại).
+  (thanh dưới mobile hiện `grid-cols-6` cho 6 mục — thêm mục thứ 7 phải chỉnh lại).
 - **Mobile-first / iPhone PWA**: `viewport-fit=cover`; vùng an toàn dùng `env(safe-area-inset-*)`.
   Mọi UI phải dùng được ở ≥ 320 px.
 - `input[type="file"]` bị ẩn toàn cục (CSS) → phải có nút/label kích hoạt riêng.

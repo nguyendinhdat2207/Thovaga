@@ -34,24 +34,27 @@ function safeNextPath(raw: string): string {
 }
 
 /**
- * Supabase Auth chỉ nhận email, nhưng tài khoản thành viên đặt tên ngắn kiểu
- * "test1" — gõ không có "@" thì coi là tên đăng nhập, ghép với domain nội bộ
- * (user tạo sẵn với email `<tên>@thovaga.local`, không cần nhận thư).
+ * Tên đăng nhập có 2 kiểu lưu trong auth.users.email:
+ *   - Tài khoản chủ app: lưu nguyên tên, không có "@" (vd "thovaga").
+ *   - Tài khoản thành viên: `<tên>@thovaga.local` (vd "test1@thovaga.local").
+ * Nên thử đúng chữ người dùng gõ trước; chỉ khi sai và chữ đó không có "@" mới
+ * thử thêm domain nội bộ.
  */
 const USERNAME_EMAIL_DOMAIN = "thovaga.local";
 
-function toLoginEmail(raw: string): string {
-  const value = raw.trim().toLowerCase();
-  return value.includes("@") ? value : `${value}@${USERNAME_EMAIL_DOMAIN}`;
-}
-
 export async function signIn(formData: FormData) {
-  const email = toLoginEmail(String(formData.get("email") ?? ""));
+  const login = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const next = safeNextPath(String(formData.get("next") ?? "/"));
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  let { error } = await supabase.auth.signInWithPassword({ email: login, password });
+  if (error && !login.includes("@") && toErrorCode(error.message) === "invalid_credentials") {
+    ({ error } = await supabase.auth.signInWithPassword({
+      email: `${login}@${USERNAME_EMAIL_DOMAIN}`,
+      password,
+    }));
+  }
 
   if (error) {
     console.error("[login] đăng nhập thất bại:", error.message);

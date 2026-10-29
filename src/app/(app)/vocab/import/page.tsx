@@ -1,6 +1,12 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { isAppAdmin } from "@/lib/queries/account";
 import { VocabImportForm } from "@/components/vocab/VocabImportForm";
 
-export default function VocabImportPage() {
+export default async function VocabImportPage() {
+  const supabase = await createClient();
+  if (!(await isAppAdmin(supabase))) redirect("/vocab");
+
   return (
     <div className="max-w-[720px] mx-auto px-5 py-6 pb-10">
       <h1 className="font-display font-extrabold text-[28px] tracking-tight text-ink mb-1">

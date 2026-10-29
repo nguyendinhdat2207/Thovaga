@@ -94,6 +94,7 @@ export interface Database {
       };
       attempts: {
         Row: {
+          user_id: string;
           id: string;
           deck_id: string;
           started_at: string;
@@ -105,6 +106,7 @@ export interface Database {
           completed: boolean;
         };
         Insert: {
+          user_id?: string;
           id?: string;
           deck_id: string;
           started_at: string;
@@ -128,6 +130,7 @@ export interface Database {
       };
       attempt_answers: {
         Row: {
+          user_id: string;
           id: string;
           attempt_id: string;
           question_id: string;
@@ -135,6 +138,7 @@ export interface Database {
           is_correct: boolean;
         };
         Insert: {
+          user_id?: string;
           id?: string;
           attempt_id: string;
           question_id: string;
@@ -203,6 +207,7 @@ export interface Database {
       };
       vocab_progress: {
         Row: {
+          user_id: string;
           word_id: string;
           box: number;
           correct: number;
@@ -211,6 +216,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          user_id?: string;
           word_id: string;
           box?: number;
           correct?: number;
@@ -223,7 +229,7 @@ export interface Database {
           {
             foreignKeyName: "vocab_progress_word_id_fkey";
             columns: ["word_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "vocab_words";
             referencedColumns: ["id"];
           },
@@ -231,6 +237,7 @@ export interface Database {
       };
       vocab_sessions: {
         Row: {
+          user_id: string;
           id: string;
           mode: "flashcard" | "quiz";
           started_at: string;
@@ -245,6 +252,7 @@ export interface Database {
           completed: boolean;
         };
         Insert: {
+          user_id?: string;
           id?: string;
           mode: "flashcard" | "quiz";
           started_at: string;
@@ -512,6 +520,11 @@ export interface Database {
       apply_vocab_progress: {
         Args: { p_word_id: string; p_correct: boolean };
         Returns: Database["public"]["Tables"]["vocab_progress"]["Row"][];
+      };
+      // Vai trò của người đang đăng nhập — xem 0021_member_accounts.sql.
+      is_app_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
       };
       attempt_summary: {
         Args: Record<string, never>;

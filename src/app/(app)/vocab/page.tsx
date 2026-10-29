@@ -6,13 +6,15 @@ import {
   DAILY_REVIEW_LIMIT,
   VOCAB_MISTAKE_PACK_SIZE,
 } from "@/lib/queries/vocab";
+import { isAppAdmin } from "@/lib/queries/account";
 import { LinkButton } from "@/components/ui/LinkButton";
 
 export default async function VocabPage() {
   const supabase = await createClient();
-  const [decks, mistakePacks] = await Promise.all([
+  const [decks, mistakePacks, isAdmin] = await Promise.all([
     getVocabDecks(supabase),
     getMistakePacks(supabase),
+    isAppAdmin(supabase),
   ]);
   const totalMistakes = mistakePacks.reduce((sum, p) => sum + p.entryCount, 0);
 
@@ -42,9 +44,11 @@ export default async function VocabPage() {
           <LinkButton href="/vocab/inbox" variant="ghost" size="sm">
             Sổ ghi nhanh
           </LinkButton>
-          <LinkButton href="/vocab/import" variant="ghost" size="sm">
-            + Thêm từ mới
-          </LinkButton>
+          {isAdmin && (
+            <LinkButton href="/vocab/import" variant="ghost" size="sm">
+              + Thêm từ mới
+            </LinkButton>
+          )}
         </div>
       </div>
 

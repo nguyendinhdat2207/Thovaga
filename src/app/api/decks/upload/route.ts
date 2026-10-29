@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, BadRequestError } from "@/lib/api/route-helpers";
+import { withAuth, BadRequestError, requireAdmin } from "@/lib/api/route-helpers";
 
 const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 const BUCKET = "documents";
@@ -20,6 +20,7 @@ function sanitizeFileName(name: string) {
 // questions tự động — hiện tại người dùng vẫn cần tự dán JSON/Markdown qua
 // POST /api/decks/import sau khi tải file lên ở đây.
 export const POST = withAuth(async ({ supabase, user, req }) => {
+  await requireAdmin(supabase);
   const formData = await req.formData().catch(() => null);
   const file = formData?.get("file");
   if (!file || !(file instanceof File)) {

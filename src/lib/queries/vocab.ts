@@ -181,7 +181,10 @@ export async function getVocabDecks(
   }));
 }
 
-export type VocabWordWithProgress = VocabWord & { progress: VocabProgress | null };
+// Bỏ user_id: tiến trình trả về luôn là của người đang đăng nhập (RLS lọc sẵn).
+export type VocabWordWithProgress = VocabWord & {
+  progress: Omit<VocabProgress, "user_id"> | null;
+};
 
 /** Đếm số từ khớp bộ lọc — dùng cho phân trang kho từ. */
 export async function getVocabWordsCount(

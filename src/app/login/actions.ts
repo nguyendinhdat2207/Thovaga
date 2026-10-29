@@ -33,8 +33,20 @@ function safeNextPath(raw: string): string {
   return raw;
 }
 
+/**
+ * Supabase Auth chỉ nhận email, nhưng tài khoản thành viên đặt tên ngắn kiểu
+ * "test1" — gõ không có "@" thì coi là tên đăng nhập, ghép với domain nội bộ
+ * (user tạo sẵn với email `<tên>@thovaga.local`, không cần nhận thư).
+ */
+const USERNAME_EMAIL_DOMAIN = "thovaga.local";
+
+function toLoginEmail(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  return value.includes("@") ? value : `${value}@${USERNAME_EMAIL_DOMAIN}`;
+}
+
 export async function signIn(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = toLoginEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
   const next = safeNextPath(String(formData.get("next") ?? "/"));
 

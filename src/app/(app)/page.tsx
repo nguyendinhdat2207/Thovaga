@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSubjectsWithProgress } from "@/lib/queries/subjects";
 import { getHistory, getContinueDeckId } from "@/lib/queries/attempts";
+import { isAppAdmin } from "@/lib/queries/account";
 import { Mascot } from "@/components/ui/Mascot";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SubjectCard } from "@/components/subjects/SubjectCard";
@@ -10,10 +11,11 @@ import { WeekChart } from "@/components/WeekChart";
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [subjects, { stats }, continueDeckId] = await Promise.all([
+  const [subjects, { stats }, continueDeckId, isAdmin] = await Promise.all([
     getSubjectsWithProgress(supabase),
     getHistory(supabase),
     getContinueDeckId(supabase),
+    isAppAdmin(supabase),
   ]);
 
   return (
@@ -67,15 +69,17 @@ export default async function HomePage() {
               Đi tới trang từ vựng
             </LinkButton>
           </div>
-          <div className="border-t border-border pt-[18px]">
-            <div className="font-display font-extrabold text-[17px] text-ink">Tải đề lên</div>
-            <p className="font-bold text-[13px] leading-relaxed text-ink-muted mt-1 mb-3">
-              Thêm PDF đề thi hoặc dán JSON câu hỏi để tạo bộ đề mới.
-            </p>
-            <LinkButton variant="ghost" size="sm" href="/upload">
-              Đi tới trang tải đề
-            </LinkButton>
-          </div>
+          {isAdmin && (
+            <div className="border-t border-border pt-[18px]">
+              <div className="font-display font-extrabold text-[17px] text-ink">Tải đề lên</div>
+              <p className="font-bold text-[13px] leading-relaxed text-ink-muted mt-1 mb-3">
+                Thêm PDF đề thi hoặc dán JSON câu hỏi để tạo bộ đề mới.
+              </p>
+              <LinkButton variant="ghost" size="sm" href="/upload">
+                Đi tới trang tải đề
+              </LinkButton>
+            </div>
+          )}
         </aside>
       </div>
     </div>

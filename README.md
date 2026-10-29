@@ -149,7 +149,7 @@ Answer: A
 ## Chạy local
 
 1. Tạo project Supabase mới tại [supabase.com](https://supabase.com).
-2. Chạy lần lượt toàn bộ migration `supabase/migrations/0001_init.sql` → `0020_toeic_vocab_seed.sql`
+2. Chạy lần lượt toàn bộ migration `supabase/migrations/0001_init.sql` → `0021_member_accounts.sql`
    (SQL Editor trên dashboard, hoặc `supabase db push` nếu dùng Supabase CLI).
 3. Tạo bucket Storage tên `documents` nếu migration insert vào `storage.buckets` bị
    dashboard chặn — kiểm tra lại trong Storage > Buckets.
@@ -225,8 +225,20 @@ tài khoản ở project Supabase này đều đọc/xoá được toàn bộ d�
 > Providers → tắt **Allow new users to sign up**. RLS đã chặn người lạ đọc dữ liệu, nhưng tắt
 > đăng ký thì họ không tạo được tài khoản rác ngay từ đầu.
 
-Muốn thêm người dùng thứ hai: `insert into app_owners (user_id) values ('<uuid>')` từ SQL
-Editor. Mặc định là không có quyền.
+Có 2 vai trò (`0021_member_accounts.sql`, cột `app_owners.is_admin`):
+
+- **Admin** (chủ app): thêm/sửa bộ đề, bộ từ, file tài liệu.
+- **Thành viên**: học trên cùng bộ đề/bộ từ nhưng chỉ đọc; mục "Tài liệu" và nút "Thêm từ mới"
+  bị ẩn, API import trả 403, RLS chặn mọi lệnh ghi vào bảng nội dung.
+
+Tiến độ tách theo `user_id`, mỗi người chỉ thấy của mình: `attempts`, `attempt_answers`,
+`vocab_progress` (khoá `(user_id, word_id)`), `vocab_sessions`, `vocab_mistake_entries`, cùng các
+bảng vốn đã tách từ trước (`roadmap_progress`, `toeic_*`, `vocab_inbox`). Các hàm thống kê là
+`security invoker` nên RLS tự lọc theo người gọi.
+
+Thêm thành viên: Authentication > Users > Add user (tick *Auto Confirm User*), copy UID, rồi
+chạy `insert into app_owners (user_id) values ('<uuid>');` trong SQL Editor (`is_admin` mặc định
+`false`). Chưa insert thì đăng nhập được nhưng không thấy dữ liệu gì.
 
 ### Khoá dữ liệu từ vựng (`0012_protect_vocab_data.sql`)
 

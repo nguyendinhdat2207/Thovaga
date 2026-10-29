@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getTotalStudiedMinutes } from "@/lib/queries/stats";
+import { isAppAdmin } from "@/lib/queries/account";
 import { formatHours } from "@/lib/format";
 import { AppChrome } from "@/components/AppChrome";
 
@@ -11,7 +12,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
   // Một câu SQL cộng dồn cả bộ đề lẫn phiên từ vựng, thay cho việc tải mọi
   // dòng duration_seconds của hai bảng về rồi cộng ở đây.
-  const totalMinutes = await getTotalStudiedMinutes(supabase);
+  const [totalMinutes, isAdmin] = await Promise.all([
+    getTotalStudiedMinutes(supabase),
+    isAppAdmin(supabase),
+  ]);
 
-  return <AppChrome totalStudiedLabel={formatHours(totalMinutes)}>{children}</AppChrome>;
+  return (
+    <AppChrome totalStudiedLabel={formatHours(totalMinutes)} isAdmin={isAdmin}>
+      {children}
+    </AppChrome>
+  );
 }

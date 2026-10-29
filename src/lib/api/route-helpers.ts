@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { isAppAdmin } from "@/lib/queries/account";
 
 /**
  * Lỗi có mã HTTP đi kèm — mọi lớp lỗi nghiệp vụ (RecordAttemptError,
@@ -95,4 +96,15 @@ export async function readJsonBody(req: Request): Promise<Record<string, unknown
 
 export class BadRequestError extends Error {
   status = 400;
+}
+
+export class ForbiddenError extends Error {
+  status = 403;
+}
+
+/** Chặn route thêm/sửa nội dung với tài khoản thành viên (không phải admin). */
+export async function requireAdmin(supabase: SupabaseClient<Database>): Promise<void> {
+  if (!(await isAppAdmin(supabase))) {
+    throw new ForbiddenError("Chỉ chủ app mới thêm được bộ đề hoặc bộ từ.");
+  }
 }

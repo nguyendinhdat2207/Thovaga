@@ -1,9 +1,12 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isAppAdmin } from "@/lib/queries/account";
 import { getSubjectsWithProgress } from "@/lib/queries/subjects";
 import { UploadForm } from "@/components/upload/UploadForm";
 
 export default async function UploadPage() {
   const supabase = await createClient();
+  if (!(await isAppAdmin(supabase))) redirect("/");
   const subjects = await getSubjectsWithProgress(supabase);
 
   return (

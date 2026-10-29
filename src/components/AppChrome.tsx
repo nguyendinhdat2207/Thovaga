@@ -12,17 +12,21 @@ const NAV_ITEMS = [
   { href: "/toeic", label: "TOEIC", match: (p: string) => p.startsWith("/toeic") },
   { href: "/roadmap", label: "Lộ trình", match: (p: string) => p.startsWith("/roadmap") },
   { href: "/history", label: "Lịch sử", match: (p: string) => p.startsWith("/history") },
-  { href: "/upload", label: "Tài liệu", match: (p: string) => p.startsWith("/upload") },
+  { href: "/upload", label: "Tài liệu", match: (p: string) => p.startsWith("/upload"), adminOnly: true },
 ];
 
 export function AppChrome({
   totalStudiedLabel,
+  isAdmin,
   children,
 }: {
   totalStudiedLabel: string;
+  isAdmin: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  // Thành viên không thêm được đề (xem 0021_member_accounts.sql) nên ẩn mục Tài liệu.
+  const navItems = NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly);
   const hideChrome =
     (pathname.startsWith("/quiz/") && !pathname.includes("/result")) ||
     pathname.startsWith("/vocab/flashcard") ||
@@ -43,7 +47,7 @@ export function AppChrome({
               </span>
             </Link>
             <nav className="hidden sm:flex gap-0.5">
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const active = item.match(pathname);
                 return (
                   <Link
@@ -83,10 +87,13 @@ export function AppChrome({
 
       {!hideChrome && (
         <nav
-          className="sm:hidden sticky bottom-0 bg-white border-t border-border grid grid-cols-6 pt-2 px-1"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="sm:hidden sticky bottom-0 bg-white border-t border-border grid pt-2 px-1"
+          style={{
+            gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
+            paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          }}
         >
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = item.match(pathname);
             return (
               <Link

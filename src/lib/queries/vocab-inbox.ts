@@ -1,3 +1,4 @@
+import { isMissingSchemaError } from "@/lib/queries/toeic";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, VocabInboxItem } from "@/lib/database.types";
 import {
@@ -61,7 +62,11 @@ export async function getInboxItems(
       ? q.is("processed_at", null).order("created_at", { ascending: true })
       : q.not("processed_at", "is", null).order("processed_at", { ascending: false });
   const { data, error } = await q.limit(INBOX_BATCH_MAX);
-  if (error) throw error;
+  if (error) {
+    // Chưa chạy migration 0018 thì coi như sổ trống thay vì sập trang.
+    if (isMissingSchemaError(error)) return [];
+    throw error;
+  }
   return data ?? [];
 }
 

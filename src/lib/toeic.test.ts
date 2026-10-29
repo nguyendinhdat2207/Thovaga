@@ -82,3 +82,13 @@ describe("isoWeekNumber", () => {
     expect(isoWeekNumber("2027-01-01")).toBe(53);
   });
 });
+
+describe("isMissingSchemaError", () => {
+  it("nhận ra lỗi thiếu bảng/hàm khi chưa chạy migration", async () => {
+    const { isMissingSchemaError } = await import("@/lib/queries/toeic");
+    expect(isMissingSchemaError({ code: "PGRST205" })).toBe(true);
+    expect(isMissingSchemaError({ code: "42P01" })).toBe(true);
+    expect(isMissingSchemaError({ code: "23505" })).toBe(false);
+    expect(isMissingSchemaError(null)).toBe(false);
+  });
+});
